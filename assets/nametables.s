@@ -1,13 +1,11 @@
 .segment "RODATA"
 
 .export _title_nametable
-.export _main_nametable
-.export _help1_nametable
-.export _help2_nametable
-.export _scores_nametable
+.export _enemy_formations
+.export _empty_nametable
+
+_enemy_formations: .word _enemy_formation_1
 
 _title_nametable: .incbin "nametables/title.rle"
-_main_nametable: .incbin "nametables/main.rle"
-_help1_nametable: .incbin "nametables/help1.rle"
-_help2_nametable: .incbin "nametables/help2.rle"
-_scores_nametable: .incbin "nametables/scores.rle"
+_enemy_formation_1: .incbin "nametables/enemy1.rle"
+_empty_nametable: .incbin "nametables/empty.rle"

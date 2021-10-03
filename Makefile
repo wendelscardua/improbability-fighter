@@ -32,11 +32,9 @@ src/crt0.o: src/crt0.s src/mmc3/mmc3_code.asm src/lib/neslib.s src/lib/nesdoug.s
 	ca65 $< ${CA65_FLAGS}
 
 assets/nametables.o: assets/nametables.s assets/nametables.h \
-                     assets/nametables/main.rle \
                      assets/nametables/title.rle \
-                     assets/nametables/help1.rle \
-                     assets/nametables/help2.rle \
-                     assets/nametables/scores.rle
+                     assets/nametables/empty.rle \
+                     assets/nametables/enemy1.rle
 	ca65 $< ${CA65_FLAGS}
 
 src/music/soundtrack.s: src/music/soundtrack.txt

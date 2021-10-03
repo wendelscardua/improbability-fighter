@@ -36,6 +36,13 @@ enum game_state {
                  GameEnd
 } current_game_state;
 
+enum ship_mode {
+                Default
+} current_ship_mode;
+
+unsigned char enemy_area_x, enemy_area_y;
+unsigned char player_x, player_y;
+
 #pragma bss-name(pop)
 // should be in the regular 0x300 ram now
 
@@ -53,8 +60,7 @@ unsigned int wram_start;
 #pragma rodata-name ("RODATA")
 #pragma code-name ("CODE")
 
-const unsigned char palette_bg[16]={ 0x1a,0x1a,0x29,0x3a,0x1a,0x30,0x00,0x0f,0x1a,0x07,0x28,0x0f,0x1a,0x38,0x28,0x29 };
-const unsigned char palette_spr[16]={ 0x1a,0x1a,0x29,0x3a,0x1a,0x30,0x00,0x0f,0x1a,0x07,0x28,0x0f,0x1a,0x38,0x28,0x29 };
+const unsigned char palette[16]={ 0x0f,0x00,0x10,0x30,0x0f,0x01,0x21,0x31,0x0f,0x06,0x16,0x26,0x0f,0x09,0x19,0x29 };
 
 void draw_sprites (void);
 
@@ -62,6 +68,21 @@ void init_wram (void) {
   if (wram_start != 0xcafe)
     memfill(&wram_start,0,0x2000);
   wram_start = 0xcafe;
+}
+
+void load_enemy_formation (unsigned char index) {
+  vram_adr(NTADR_A(0,0));
+  unrle(enemy_formations[index]);
+  enemy_area_x = 0;
+  enemy_area_y = 0xa0;
+  set_scroll_x(enemy_area_x);
+  set_scroll_y(enemy_area_y);
+}
+
+void init_ship (void) {
+  current_ship_mode = Default;
+  player_x = 0x80;
+  player_y = 0xa0;
 }
 
 void start_game (void) {
@@ -72,16 +93,19 @@ void start_game (void) {
 
   pal_fade_to(4, 0);
   ppu_off(); // screen off
-  pal_bg(palette_bg); // load the BG palette
-  pal_spr(palette_spr); // load the sprite palette
+  pal_bg(palette); // load the BG palette
+  pal_spr(palette); // load the sprite palette
 
   // draw some things
-  vram_adr(NTADR_A(0,0));
-  unrle(main_nametable);
-
+  load_enemy_formation(0);
+  vram_adr(NTADR_C(0,0));
+  unrle(empty_nametable);
   ppu_on_all();
 
   pal_fade_to(0, 4);
+  current_game_state = GamePlay;
+
+  init_ship();
 }
 
 void go_to_title (void) {
@@ -107,8 +131,8 @@ void main (void) {
   init_wram();
 
   ppu_off(); // screen off
-  pal_bg(palette_bg); //	load the BG palette
-  pal_spr(palette_spr); // load the sprite palette
+  pal_bg(palette); //	load the BG palette
+  pal_spr(palette); // load the sprite palette
   // load red alpha and drawing as bg chars
   // and unused as sprites
   set_chr_mode_2(BG_0);
@@ -122,7 +146,6 @@ void main (void) {
 
   unseeded = 1;
 
-
   set_vram_buffer();
   clear_vram_buffer();
 
@@ -132,12 +155,19 @@ void main (void) {
     pad_poll(0);
     rand16();
 
+
+    double_buffer_index = 0;
+
     switch (current_game_state) {
     case Title:
       ++temp;
       if (get_pad_new(0) & (PAD_START | PAD_A)) {
         start_game();
       }
+      break;
+    case GamePlay:
+      set_scroll_x(enemy_area_x);
+      set_scroll_y(enemy_area_y);
       break;
     case GameEnd:
       if (get_pad_new(0) & PAD_START) {
@@ -146,13 +176,11 @@ void main (void) {
       break;
     }
 
+
     // load the irq array with values it parse
     // ! CHANGED it, double buffered so we aren't editing the same
     // array that the irq system is reading from
 
-    double_buffer_index = 0;
-
-    // populate double buffer here
 
     double_buffer[double_buffer_index++] = 0xff; // end of data
 
@@ -173,4 +201,11 @@ void main (void) {
 
 void draw_sprites (void) {
   oam_clear();
+  if (current_game_state != GamePlay) return;
+
+  switch(current_ship_mode) {
+  case Default:
+    oam_meta_spr(player_x, player_y, default_ship_sprite);
+    break;
+  }
 }
