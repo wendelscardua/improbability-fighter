@@ -22,6 +22,7 @@
 #define INT(unsigned_fixed_point) ((unsigned_fixed_point>>4)&0xff)
 
 #define PLAYER_SPEED FP(1, 128)
+#define TETRO_SPEED FP(8, 128)
 
 #define MAX_BULLETS 64
 #define MAX_ENEMIES 4
@@ -619,32 +620,62 @@ void main (void) {
 #define X_MARGIN 0x10
 #define TOP_MARGIN 0x60
 #define BOTTOM_MARGIN 0x20
-      if (pad_state(0) & (PAD_LEFT)) {
-        player_speed = -1;
-        if (player_x > FP(X_MARGIN, 0)) {
-          player_x -= PLAYER_SPEED;
-          player_collidable.x = INT(player_x) - HITBOX_WIDTH/2;
+      if (current_ship_mode == Tetro) {
+        if (get_pad_new(0) & (PAD_LEFT)) {
+          player_speed = -1;
+          if (player_x > FP(X_MARGIN, 0)) {
+            player_x -= TETRO_SPEED;
+            player_collidable.x = INT(player_x) - HITBOX_WIDTH/2;
+          }
+        }
+        if (get_pad_new(0) & (PAD_RIGHT)) {
+          player_speed = 1;
+          if (player_x < FP(0xff - X_MARGIN, 0)) {
+            player_x += TETRO_SPEED;
+            player_collidable.x = INT(player_x) - HITBOX_WIDTH/2;
+          }
+        }
+        if (get_pad_new(0) & (PAD_UP)) {
+          if (player_y > FP(TOP_MARGIN, 0)) {
+            player_y -= TETRO_SPEED;
+            player_collidable.y = INT(player_y) - HITBOX_HEIGHT/2;
+          }
+        }
+        if (get_pad_new(0) & (PAD_DOWN)) {
+          if (player_y < FP(0xef - BOTTOM_MARGIN, 0)) {
+            player_y += TETRO_SPEED;
+            player_collidable.y = INT(player_y) - HITBOX_HEIGHT/2;
+          }
+        }
+      } else {
+        if (pad_state(0) & (PAD_LEFT)) {
+          player_speed = -1;
+          if (player_x > FP(X_MARGIN, 0)) {
+            player_x -= PLAYER_SPEED;
+            player_collidable.x = INT(player_x) - HITBOX_WIDTH/2;
+          }
+        }
+        if (pad_state(0) & (PAD_RIGHT)) {
+          player_speed = 1;
+          if (player_x < FP(0xff - X_MARGIN, 0)) {
+            player_x += PLAYER_SPEED;
+            player_collidable.x = INT(player_x) - HITBOX_WIDTH/2;
+          }
+        }
+        if (pad_state(0) & (PAD_UP)) {
+          if (player_y > FP(TOP_MARGIN, 0)) {
+            player_y -= PLAYER_SPEED;
+            player_collidable.y = INT(player_y) - HITBOX_HEIGHT/2;
+          }
+        }
+        if (pad_state(0) & (PAD_DOWN)) {
+          if (player_y < FP(0xef - BOTTOM_MARGIN, 0)) {
+            player_y += PLAYER_SPEED;
+            player_collidable.y = INT(player_y) - HITBOX_HEIGHT/2;
+          }
         }
       }
-      if (pad_state(0) & (PAD_RIGHT)) {
-        player_speed = 1;
-        if (player_x < FP(0xff - X_MARGIN, 0)) {
-          player_x += PLAYER_SPEED;
-          player_collidable.x = INT(player_x) - HITBOX_WIDTH/2;
-        }
-      }
-      if (pad_state(0) & (PAD_UP)) {
-        if (player_y > FP(TOP_MARGIN, 0)) {
-          player_y -= PLAYER_SPEED;
-          player_collidable.y = INT(player_y) - HITBOX_HEIGHT/2;
-        }
-      }
-      if (pad_state(0) & (PAD_DOWN)) {
-        if (player_y < FP(0xef - BOTTOM_MARGIN, 0)) {
-          player_y += PLAYER_SPEED;
-          player_collidable.y = INT(player_y) - HITBOX_HEIGHT/2;
-        }
-      }
+
       if (health == 0 || current_enemy_formation == MAX_FORMATIONS) {
         if (get_pad_new(0) & (PAD_START)) {
           go_to_title();
