@@ -25,7 +25,7 @@
 
 #define MAX_BULLETS 64
 #define MAX_ENEMIES 4
-#define MAX_FORMATIONS 1
+#define MAX_FORMATIONS 2
 
 #define IS_PLAYER_BULLET(index) (bullets_type[index] == PlayerBullet || bullets_type[index] == PlayerApple)
 
@@ -126,7 +126,7 @@ unsigned char enemy_height[MAX_ENEMIES];
 
 const unsigned char palette[16]={ 0x0f,0x00,0x10,0x30,0x0f,0x01,0x21,0x31,0x0f,0x06,0x16,0x26,0x0f,0x17,0x19,0x29 };
 
-const unsigned char emptiness[] = { 0x00,0x00,0x00,0x00 };
+const unsigned char emptiness[] = { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 };
 
 const enemy enemies[] = { //c,  r, w, h, hp, pattern
                          { 14, 24, 4, 2, 10, Trio }, //1-1
@@ -137,14 +137,27 @@ const enemy enemies[] = { //c,  r, w, h, hp, pattern
                          {  4,  6, 4, 2, 12, Trio }, //1-3
                          { 10,  8, 4, 2, 12, Trio },
                          { 18,  8, 4, 2, 12, Trio },
-                         { 24,  6, 4, 2, 12, Trio }
+                         { 24,  6, 4, 2, 12, Trio },
+
+                         { 12, 23, 8, 3, 12, Trio }, //2-1
+
+                         {  4, 15, 8, 3, 12, Trio }, //2-2
+                         { 20, 15, 8, 3, 12, Trio },
+
+                         {  4,  6, 8, 3, 12, Trio }, //2-3
+                         { 12,  7, 8, 3, 12, Trio },
+                         { 20,  6, 8, 3, 12, Trio }
+
 };
 
-const unsigned char formations[1][] = {
-                                       {1, 0, 2, 1, 2, 4, 3, 4, 5, 6, 0}
+const unsigned char formations[2][] = {
+                                       {1, 0, 2, 1, 2, 4, 3, 4, 5, 6, 0},
+                                       {1, 7, 2, 8, 9, 3, 10, 11, 12, 0}
 };
 
 void draw_sprites (void);
+void update_health (void);
+void update_chaos (void);
 
 void init_wram (void) {
   //if (wram_start != 0xcafe)
@@ -161,40 +174,48 @@ unsigned char load_enemy_row (void) {
     if (current_enemy_formation >= MAX_FORMATIONS) {
       return 0;
     } else {
-      ppu_wait_nmi();
+      clear_vram_buffer();
+      pal_fade_to(4, 0);
+      ppu_off(); // screen off
       load_enemy_formation(current_enemy_formation);
+      ppu_on_all();
+      update_health();
+      update_chaos();
+      pal_fade_to(0, 4);
+      enemy_row_movement = 0;
       return 1;
-      }
+    }
   }
   num_enemies = 0;
   while(num_enemies < temp) {
     i = formations[current_enemy_formation][enemy_formation_index++];
     enemy_index[num_enemies] = i;
     enemy_hp[num_enemies] = enemies[i].hp;
-    enemy_shoot_cd[num_enemies] = 0;
-    enemy_bullets_cd[num_enemies] = 0;
-    enemy_bullet_count[num_enemies] = 0;
-    enemy_x[num_enemies] = enemies[i].column * 8 + 2;
-    enemy_y[num_enemies] = enemies[i].row * 8 + 2;
-    enemy_width[num_enemies] = enemies[i].width * 8 - 4;
-    enemy_height[num_enemies] = enemies[i].height * 8 - 4;
+enemy_shoot_cd[num_enemies] = 0;
+                        enemy_bullets_cd[num_enemies] = 0;
+                        enemy_bullet_count[num_enemies] = 0;
+                        enemy_x[num_enemies] = enemies[i].column * 8 + 2;
+                        enemy_y[num_enemies] = enemies[i].row * 8 + 2;
+                        enemy_width[num_enemies] = enemies[i].width * 8 - 4;
+                        enemy_height[num_enemies] = enemies[i].height * 8 - 4;
 
-    ++num_enemies;
-  }
-  return 1;
-}
+                        ++num_enemies;
+                      }
+                      enemy_row_movement = 64;
+                      return 1;
+                    }
 
-void load_enemy_formation (unsigned char index) {
-  current_enemy_formation = index;
-  enemy_formation_index = 0;
-  vram_adr(NTADR_A(0,0));
-  unrle(enemy_formation_nametables[index]);
-  enemy_area_x = 0;
-  enemy_area_y = 0xa0;
-  set_scroll_x(enemy_area_x);
-  set_scroll_y(enemy_area_y);
-  load_enemy_row();
-}
+                    void load_enemy_formation (unsigned char index) {
+                      current_enemy_formation = index;
+                      enemy_formation_index = 0;
+                      vram_adr(NTADR_A(0,0));
+                      unrle(enemy_formation_nametables[index]);
+                      enemy_area_x = 0;
+                      enemy_area_y = 0xa0;
+                      set_scroll_x(enemy_area_x);
+                      set_scroll_y(enemy_area_y);
+                      load_enemy_row();
+                    }
 
 #define HITBOX_WIDTH 8
 #define HITBOX_HEIGHT 8
@@ -217,6 +238,7 @@ void init_ship (void) {
 }
 
 void update_health (void) {
+  if (health == 10) return;
   // XXX: cheating, if updating health it's below 10
   one_vram_buffer(0x10, NTADR_A(11, 2));
   one_vram_buffer(0x10 + health, NTADR_A(12, 2));
@@ -264,9 +286,7 @@ void delete_enemy (void) {
   // TODO kaboom
 
   if (num_enemies == 0) {
-    if (load_enemy_row()) {
-      enemy_row_movement = 64;
-    }
+    load_enemy_row();
   }
 }
 
@@ -588,6 +608,13 @@ void main (void) {
       if (pad_state(0) & (PAD_A)) {
         player_shoot();
       }
+#ifdef DEBUG
+      if (get_pad_new(0) & PAD_B) {
+        for(i = 0; i < num_enemies; i++) {
+          enemy_hp[i] = 1;
+        }
+      }
+#endif
 
       break;
     case GameEnd:
