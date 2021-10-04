@@ -23,7 +23,7 @@
 
 #define PLAYER_SPEED FP(1, 128)
 
-#define MAX_BULLETS 32
+#define MAX_BULLETS 64
 #define MAX_ENEMIES 4
 
 #pragma bss-name(push, "ZEROPAGE")
@@ -187,7 +187,7 @@ void go_to_title (void) {
 }
 
 void player_shoot (void) {
-  if (player_shoot_cd > 0) return;
+  if (player_shoot_cd > 0 || num_bullets >= MAX_BULLETS) return;
 
   switch(current_ship_mode) {
   case Default:
