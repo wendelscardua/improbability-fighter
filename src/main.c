@@ -512,14 +512,14 @@ void main (void) {
         if (chaos < 10) {
           switch(rand8() % 4) {
           case 0:
-            chaos_counter = 60;
+            chaos_counter = 45;
             break;
           case 1:
           case 2:
-            chaos_counter = 120;
+            chaos_counter = 90;
             break;
           case 3:
-            chaos_counter = 180;
+            chaos_counter = 120;
             break;
           }
         } else {
