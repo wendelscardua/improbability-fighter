@@ -44,3 +44,17 @@ const unsigned char tree_ship_sprite[]={
                                         0,  4,0xa8,3,
                                         0x80
 };
+
+const unsigned char game_over[]={
+
+                                 -16,- 8,0x27,2,
+                                 - 8,- 8,0x21,2,
+                                 0,- 8,0x2d,2,
+                                 8,- 8,0x25,2,
+
+                                 -16,  0,0x2f,2,
+                                 - 8,  0,0x36,2,
+                                 0,  0,0x25,2,
+                                 8,  0,0x32,2,
+                                 0x80
+};

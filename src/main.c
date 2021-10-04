@@ -76,6 +76,7 @@ enum ship_mode {
 
 unsigned char enemy_area_x, enemy_area_y;
 unsigned int player_x, player_y;
+signed char player_speed;
 unsigned char player_shoot_cd, player_bullets_cd, player_bullet_count;
 unsigned char health, chaos;
 unsigned char chaos_counter;
@@ -193,6 +194,7 @@ void init_ship (void) {
   player_shoot_cd = 0;
   player_bullet_count = 0;
   player_bullets_cd = 0;
+  player_speed = 0;
   health = 10;
   chaos = 0;
   chaos_counter = 240;
@@ -260,6 +262,9 @@ void update_bullets (void) {
   for(i = 0; i < num_bullets; ++i) {
     bullets_x[i] += bullets_delta_x[i];
     bullets_y[i] += bullets_delta_y[i];
+    if (bullets_type[i] == PlayerApple && bullets_delta_y[i] > -FP(2, 0)) {
+      bullets_delta_y[i] -= FP(0, 16);
+    }
   }
 
   // XXX: hardcoded bullet size
@@ -362,6 +367,22 @@ void player_shoot (void) {
     bullets_type[num_bullets] = PlayerBullet;
     bullets_delta_x[num_bullets] = FP(0, 0);
     bullets_delta_y[num_bullets] = -FP(2, 128);
+    num_bullets++;
+    break;
+  case Tree:
+    if (player_bullet_count >= 1) return;
+    ++player_bullet_count;
+    player_shoot_cd = 12;
+    player_bullets_cd = 45;
+    bullets_x[num_bullets] = player_x - FP(3, 0);
+    bullets_y[num_bullets] = player_y - FP(8, 0);
+    bullets_type[num_bullets] = PlayerApple;
+    if (player_speed >= 0) {
+      bullets_delta_x[num_bullets] = FP(0, 32);
+    } else {
+      bullets_delta_x[num_bullets] = -FP(0, 32);
+    }
+    bullets_delta_y[num_bullets] = FP(2, 0);
     num_bullets++;
     break;
   }
@@ -514,16 +535,25 @@ void main (void) {
 
       set_scroll_x(enemy_area_x);
       set_scroll_y(enemy_area_y);
+
+      if (health == 0) {
+        if (get_pad_new(0) & (PAD_START)) {
+          go_to_title();
+        }
+        break;
+      }
 #define X_MARGIN 0x10
 #define TOP_MARGIN 0x60
 #define BOTTOM_MARGIN 0x20
       if (pad_state(0) & (PAD_LEFT)) {
+        player_speed = -1;
         if (player_x > FP(X_MARGIN, 0)) {
           player_x -= PLAYER_SPEED;
           player_collidable.x = INT(player_x) - HITBOX_WIDTH/2;
         }
       }
       if (pad_state(0) & (PAD_RIGHT)) {
+        player_speed = 1;
         if (player_x < FP(0xff - X_MARGIN, 0)) {
           player_x += PLAYER_SPEED;
           player_collidable.x = INT(player_x) - HITBOX_WIDTH/2;
@@ -583,9 +613,22 @@ void draw_sprites (void) {
   oam_clear();
   if (current_game_state != GamePlay) return;
 
+  for(i = 0; i < num_bullets; ++i) {
+    switch(bullets_type[i]) {
+    case PlayerBullet:
+      oam_spr(INT(bullets_x[i]), INT(bullets_y[i]), 0x00, 0x01);
+      break;
+    case PlayerApple:
+      oam_spr(INT(bullets_x[i]), INT(bullets_y[i]), 0x01, 0x02);
+      break;
+    case EnemyBullet:
+      oam_spr(INT(bullets_x[i]), INT(bullets_y[i]), 0x00, 0x02);
+      break;
+    }
+  }
+
   temp_x = INT(player_x);
   temp_y = INT(player_y);
-
   if (health > 0) {
     if (chaos == 10) {
       oam_meta_spr(temp_x, temp_y, glitch_sprite);
@@ -599,19 +642,7 @@ void draw_sprites (void) {
         break;
       }
     }
-  }
-
-  for(i = 0; i < num_bullets; ++i) {
-    switch(bullets_type[i]) {
-    case PlayerBullet:
-      oam_spr(INT(bullets_x[i]), INT(bullets_y[i]), 0x00, 0x01);
-      break;
-    case PlayerApple:
-      oam_spr(INT(bullets_x[i]), INT(bullets_y[i]), 0x01, 0x02);
-      break;
-    case EnemyBullet:
-      oam_spr(INT(bullets_x[i]), INT(bullets_y[i]), 0x00, 0x02);
-      break;
-    }
+  } else {
+    oam_meta_spr(temp_x, temp_y, game_over);
   }
 }
