@@ -17,6 +17,7 @@
 #define SFX_THE_END 3
 #define SFX_HIT 4
 #define SFX_PEW 5
+#define SFX_CHAOS 6
 
 #define BG_0 0
 #define BG_1 1
@@ -602,6 +603,7 @@ void main (void) {
             break;
           }
         } else {
+          sfx_play(SFX_CHAOS, 0);
           chaos_counter = 45;
         }
       }
