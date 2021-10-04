@@ -11,6 +11,13 @@
 #include "sprites.h"
 #include "../assets/nametables.h"
 
+#define SFX_TOGGLE 0
+#define SFX_SELECT 1
+#define SFX_START 2
+#define SFX_THE_END 3
+#define SFX_HIT 4
+#define SFX_PEW 5
+
 #define BG_0 0
 #define BG_1 1
 #define BG_2 2
@@ -178,6 +185,7 @@ unsigned char load_enemy_row (void) {
   if (temp == 0) {
     ++current_enemy_formation;
     if (current_enemy_formation >= MAX_FORMATIONS) {
+      sfx_play(SFX_THE_END, 0);
       return 0;
     } else {
       clear_vram_buffer();
@@ -331,6 +339,7 @@ void update_bullets (void) {
         temp_collidable_a.height = enemy_height[temp];
 
         if (check_collision(&temp_collidable_a, &temp_collidable_b)) {
+          sfx_play(SFX_HIT, 0);
           delete_bullet();
           --enemy_hp[temp];
           if (enemy_hp[temp] == 0) {
@@ -341,6 +350,7 @@ void update_bullets (void) {
       }
     } else {
       if (check_collision(&player_collidable, &temp_collidable_b)) {
+        sfx_play(SFX_HIT, 0);
         delete_bullet();
         if (health > 0) {
           --health;
@@ -440,6 +450,7 @@ void player_shoot (void) {
     num_bullets++;
     break;
   }
+  sfx_play(SFX_PEW, 0);
   return;
 }
 
@@ -548,6 +559,7 @@ void main (void) {
       set_scroll_x(0);
       set_scroll_y(0);
       if (get_pad_new(0) & (PAD_START | PAD_A)) {
+        sfx_play(SFX_START, 0);
         start_game();
       }
       break;
@@ -696,6 +708,7 @@ void main (void) {
       break;
     case GameEnd:
       if (get_pad_new(0) & PAD_START) {
+        sfx_play(SFX_SELECT, 0);
         go_to_title();
       }
       break;
