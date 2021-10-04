@@ -474,7 +474,6 @@ void main (void) {
     pad_poll(0);
     rand16();
 
-
     double_buffer_index = 0;
 
     switch (current_game_state) {
