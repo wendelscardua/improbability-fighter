@@ -45,16 +45,28 @@ const unsigned char tree_ship_sprite[]={
                                         0x80
 };
 
-const unsigned char game_over[]={
+const unsigned char game_over_sprite[]={
 
-                                 -16,- 8,0x27,2,
-                                 - 8,- 8,0x21,2,
-                                 0,- 8,0x2d,2,
-                                 8,- 8,0x25,2,
+                                        -16,- 8,0x27,2,
+                                        - 8,- 8,0x21,2,
+                                        0,- 8,0x2d,2,
+                                        8,- 8,0x25,2,
 
-                                 -16,  0,0x2f,2,
-                                 - 8,  0,0x36,2,
-                                 0,  0,0x25,2,
-                                 8,  0,0x32,2,
-                                 0x80
+                                        -16,  0,0x2f,2,
+                                        - 8,  0,0x36,2,
+                                        0,  0,0x25,2,
+                                        8,  0,0x32,2,
+                                        0x80
+};
+
+const unsigned char victory_sprite[]={
+
+                                      -16,- 8,0x39,1,
+                                      - 8,- 8,0x2f,1,
+                                      0,- 8,0x35,1,
+                                      - 8,  0,0x37,1,
+
+                                      0,  0,0x29,1,
+                                      8,  0,0x2e,1,
+                                      0x80
 };

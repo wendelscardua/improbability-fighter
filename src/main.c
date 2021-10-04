@@ -25,6 +25,7 @@
 
 #define MAX_BULLETS 64
 #define MAX_ENEMIES 4
+#define MAX_FORMATIONS 1
 
 #define IS_PLAYER_BULLET(index) (bullets_type[index] == PlayerBullet || bullets_type[index] == PlayerApple)
 
@@ -151,9 +152,20 @@ void init_wram (void) {
   //wram_start = 0xcafe;
 }
 
+void load_enemy_formation (unsigned char index);
+
 unsigned char load_enemy_row (void) {
   temp = formations[current_enemy_formation][enemy_formation_index++];
-  if (temp == 0) return 0;
+  if (temp == 0) {
+    ++current_enemy_formation;
+    if (current_enemy_formation >= MAX_FORMATIONS) {
+      return 0;
+    } else {
+      ppu_wait_nmi();
+      load_enemy_formation(current_enemy_formation);
+      return 1;
+      }
+  }
   num_enemies = 0;
   while(num_enemies < temp) {
     i = formations[current_enemy_formation][enemy_formation_index++];
@@ -278,6 +290,8 @@ void update_bullets (void) {
       delete_bullet();
       continue;
     }
+    if (health == 0 || current_enemy_formation == MAX_FORMATIONS) continue;
+
     temp_collidable_b.x = INT(bullets_x[i]);
     temp_collidable_b.y = INT(bullets_y[i]);
     if (IS_PLAYER_BULLET(i)) {
@@ -465,7 +479,8 @@ void main (void) {
 
     switch (current_game_state) {
     case Title:
-      ++temp;
+      set_scroll_x(0);
+      set_scroll_y(0);
       if (get_pad_new(0) & (PAD_START | PAD_A)) {
         start_game();
       }
@@ -536,12 +551,6 @@ void main (void) {
       set_scroll_x(enemy_area_x);
       set_scroll_y(enemy_area_y);
 
-      if (health == 0) {
-        if (get_pad_new(0) & (PAD_START)) {
-          go_to_title();
-        }
-        break;
-      }
 #define X_MARGIN 0x10
 #define TOP_MARGIN 0x60
 #define BOTTOM_MARGIN 0x20
@@ -570,6 +579,12 @@ void main (void) {
           player_y += PLAYER_SPEED;
           player_collidable.y = INT(player_y) - HITBOX_HEIGHT/2;
         }
+      }
+      if (health == 0 || current_enemy_formation == MAX_FORMATIONS) {
+        if (get_pad_new(0) & (PAD_START)) {
+          go_to_title();
+        }
+        break;
       }
       if (pad_state(0) & (PAD_A)) {
         player_shoot();
@@ -629,7 +644,9 @@ void draw_sprites (void) {
 
   temp_x = INT(player_x);
   temp_y = INT(player_y);
-  if (health > 0) {
+  if (current_enemy_formation == MAX_FORMATIONS) {
+    oam_meta_spr(temp_x, temp_y, victory_sprite);
+  } else if (health > 0) {
     if (chaos == 10) {
       oam_meta_spr(temp_x, temp_y, glitch_sprite);
     } else {
@@ -643,6 +660,6 @@ void draw_sprites (void) {
       }
     }
   } else {
-    oam_meta_spr(temp_x, temp_y, game_over);
+    oam_meta_spr(temp_x, temp_y, game_over_sprite);
   }
 }
