@@ -7,83 +7,90 @@ soundtrack_music_data:
 	.byte 1
 	.word @instruments
 	.word @samples-3
-	.word @song0ch0,@song0ch1,@song0ch2,@song0ch3,@song0ch4,307,256 ; New song
+	.word @song0ch0,@song0ch1,@song0ch2,@song0ch3,@song0ch4,307,256 ; Calm Space
 
 @instruments:
+	.word @env1,@env0,@env0,@env2
 
 @samples:
 @env0:
 	.byte $c0,$00,$00
+@env1:
+	.byte $c5,$c8,$ca,$c7,$c4,$c2,$c2,$c2,$00,$07
+@env2:
+	.byte $c2,$00,$00
 
 
-; New song
+; Calm Space
 @song0ch0:
 	.byte $fb,$06
 @song0ch0loop:
 @ref0:
-	.byte $70,$81,$70,$81,$70,$81,$70,$81,$70,$81,$70,$81,$70,$81,$70,$81
-	.byte $70,$81,$70,$81,$70,$81,$70,$81,$70,$81,$70,$81,$70,$81,$70,$81
-	.byte $ff,$10
-	.word @ref0
-	.byte $ff,$10
-	.word @ref0
-	.byte $ff,$10
-	.word @ref0
+	.byte $87,$80,$1c,$85,$1f,$8d,$1c,$85,$1f,$8d,$1c,$85,$1f,$85,$22,$85
+	.byte $23,$8d,$23,$85,$1f,$85,$1c,$8d
+@ref1:
+	.byte $87,$1c,$85,$21,$85,$1c,$85,$20,$95,$1c,$85,$21,$85,$23,$85,$28
+	.byte $8d,$28,$85,$2c,$85,$28,$85,$23,$85
+@ref2:
+	.byte $87,$23,$85,$20,$85,$1f,$85,$1c,$95,$20,$85,$1f,$85,$1c,$95,$1c
+	.byte $85,$1c,$95
+@ref3:
+	.byte $87,$1c,$95,$21,$85,$1c,$8d,$1c,$a5,$20,$85,$1c,$95
 	.byte $fd
 	.word @song0ch0loop
 
-; New song
+; Calm Space
 @song0ch1:
 @song0ch1loop:
-	.byte $ff,$10
-	.word @ref0
-	.byte $ff,$10
-	.word @ref0
-	.byte $ff,$10
-	.word @ref0
-	.byte $ff,$10
-	.word @ref0
+@ref4:
+	.byte $87,$78,$80,$28,$95,$2c,$95,$2f,$a5,$28,$9d
+@ref5:
+	.byte $87,$78,$28,$95,$2c,$95,$2f,$a5,$28,$9d
+	.byte $ff,$09
+	.word @ref5
+	.byte $ff,$09
+	.word @ref5
 	.byte $fd
 	.word @song0ch1loop
 
-; New song
+; Calm Space
 @song0ch2:
 @song0ch2loop:
 @ref8:
-	.byte $81,$81,$81,$81,$81,$81,$81,$81,$81,$81,$81,$81,$81,$81,$81,$81
-	.byte $ff,$10
-	.word @ref8
-	.byte $ff,$10
-	.word @ref8
-	.byte $ff,$10
-	.word @ref8
+	.byte $f9,$85
+@ref9:
+	.byte $f9,$85
+@ref10:
+	.byte $f9,$85
+@ref11:
+	.byte $f9,$85
 	.byte $fd
 	.word @song0ch2loop
 
-; New song
+; Calm Space
 @song0ch3:
 @song0ch3loop:
-	.byte $ff,$10
-	.word @ref0
-	.byte $ff,$10
-	.word @ref0
-	.byte $ff,$10
-	.word @ref0
-	.byte $ff,$10
-	.word @ref0
+@ref12:
+	.byte $f9,$85
+@ref13:
+	.byte $f9,$85
+@ref14:
+	.byte $f9,$85
+@ref15:
+	.byte $f9,$85
 	.byte $fd
 	.word @song0ch3loop
 
-; New song
+; Calm Space
 @song0ch4:
 @song0ch4loop:
-	.byte $ff,$10
-	.word @ref8
-	.byte $ff,$10
-	.word @ref8
-	.byte $ff,$10
-	.word @ref8
-	.byte $ff,$10
-	.word @ref8
+@ref16:
+	.byte $f9,$85
+@ref17:
+	.byte $f9,$85
+@ref18:
+	.byte $f9,$85
+@ref19:
+	.byte $f9,$85
 	.byte $fd
 	.word @song0ch4loop
