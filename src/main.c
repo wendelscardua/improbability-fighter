@@ -435,22 +435,32 @@ void main (void) {
 
       set_scroll_x(enemy_area_x);
       set_scroll_y(enemy_area_y);
+#define X_MARGIN 0x10
+#define TOP_MARGIN 0x60
+#define BOTTOM_MARGIN 0x20
       if (pad_state(0) & (PAD_LEFT)) {
-        player_x -= PLAYER_SPEED;
+        if (player_x > FP(X_MARGIN, 0)) {
+          player_x -= PLAYER_SPEED;
+        }
       }
       if (pad_state(0) & (PAD_RIGHT)) {
-        player_x += PLAYER_SPEED;
+        if (player_x < FP(0xff - X_MARGIN, 0)) {
+          player_x += PLAYER_SPEED;
+        }
       }
       if (pad_state(0) & (PAD_UP)) {
-        player_y -= PLAYER_SPEED;
+        if (player_y > FP(TOP_MARGIN, 0)) {
+          player_y -= PLAYER_SPEED;
+        }
       }
       if (pad_state(0) & (PAD_DOWN)) {
-        player_y += PLAYER_SPEED;
+        if (player_y < FP(0xef - BOTTOM_MARGIN, 0)) {
+          player_y += PLAYER_SPEED;
+        }
       }
       if (pad_state(0) & (PAD_A)) {
         player_shoot();
       }
-      // TODO bounded movement
 
       break;
     case GameEnd:
