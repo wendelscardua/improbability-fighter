@@ -248,7 +248,7 @@ void update_bullets (void) {
     temp_collidable_a.width = enemy_width[temp];
     temp_collidable_a.height = enemy_height[temp];
 
-    for(i = 0; i < num_bullets; ++i) {
+    for(i = get_frame_count() % 2; i < num_bullets; i+=2) {
       if (IS_PLAYER_BULLET(i)) {
         temp_collidable_b.x = INT(bullets_x[i]);
         temp_collidable_b.y = INT(bullets_y[i]);
@@ -326,7 +326,9 @@ void player_shoot (void) {
 }
 
 void enemy_shoot (void) {
-  if (enemy_shoot_cd[temp] > 0 || num_bullets >= MAX_BULLETS) return;
+  if (enemy_shoot_cd[temp] > 0 || num_bullets >= MAX_BULLETS || enemy_row_movement > 0) return;
+  if (enemy_bullet_count[temp] == 0 && rand8() > 32) return;
+
   temp_int_x = FP(enemy_x[temp] + enemy_width[temp] / 2 - 4, 0);
   temp_int_y = FP(enemy_y[temp] + enemy_height[temp] / 2 - enemy_area_y, 0);
 
