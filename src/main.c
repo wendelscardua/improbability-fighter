@@ -70,13 +70,15 @@ enum game_state {
 } current_game_state;
 
 enum ship_mode {
-                Default
+                Default,
+                Tree
 } current_ship_mode;
 
 unsigned char enemy_area_x, enemy_area_y;
 unsigned int player_x, player_y;
 unsigned char player_shoot_cd, player_bullets_cd, player_bullet_count;
 unsigned char health, chaos;
+unsigned char chaos_counter;
 
 collidable temp_collidable_a, temp_collidable_b, player_collidable;
 
@@ -120,7 +122,7 @@ unsigned char enemy_height[MAX_ENEMIES];
 #pragma rodata-name ("RODATA")
 #pragma code-name ("CODE")
 
-const unsigned char palette[16]={ 0x0f,0x00,0x10,0x30,0x0f,0x01,0x21,0x31,0x0f,0x06,0x16,0x26,0x0f,0x09,0x19,0x29 };
+const unsigned char palette[16]={ 0x0f,0x00,0x10,0x30,0x0f,0x01,0x21,0x31,0x0f,0x06,0x16,0x26,0x0f,0x17,0x19,0x29 };
 
 const unsigned char emptiness[] = { 0x00,0x00,0x00,0x00 };
 
@@ -193,6 +195,7 @@ void init_ship (void) {
   player_bullets_cd = 0;
   health = 10;
   chaos = 0;
+  chaos_counter = 240;
   player_collidable.width = HITBOX_WIDTH;
   player_collidable.height = HITBOX_HEIGHT;
   player_collidable.x = INT(player_x) - HITBOX_WIDTH/2;
@@ -457,6 +460,37 @@ void main (void) {
         --enemy_area_y;
       }
 
+      if (--chaos_counter == 0) {
+        if (chaos < 10) {
+          ++chaos;
+          update_chaos();
+        } else {
+          chaos = 0;
+          update_chaos();
+          // TODO: random if more than these 2
+          if (current_ship_mode == Default) {
+            current_ship_mode = Tree;
+          } else {
+            current_ship_mode = Default;
+          }
+        }
+        if (chaos < 10) {
+          switch(rand8() % 4) {
+          case 0:
+            chaos_counter = 60;
+            break;
+          case 1:
+          case 2:
+            chaos_counter = 120;
+            break;
+          case 3:
+            chaos_counter = 180;
+            break;
+          }
+        } else {
+          chaos_counter = 45;
+        }
+      }
       update_bullets();
 
       if (player_shoot_cd > 0) --player_shoot_cd;
@@ -552,10 +586,19 @@ void draw_sprites (void) {
   temp_x = INT(player_x);
   temp_y = INT(player_y);
 
-  switch(current_ship_mode) {
-  case Default:
-    oam_meta_spr(temp_x, temp_y, default_ship_sprite);
-    break;
+  if (health > 0) {
+    if (chaos == 10) {
+      oam_meta_spr(temp_x, temp_y, glitch_sprite);
+    } else {
+      switch(current_ship_mode) {
+      case Default:
+        oam_meta_spr(temp_x, temp_y, default_ship_sprite);
+        break;
+      case Tree:
+        oam_meta_spr(temp_x, temp_y, tree_ship_sprite);
+        break;
+      }
+    }
   }
 
   for(i = 0; i < num_bullets; ++i) {
