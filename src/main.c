@@ -23,6 +23,9 @@
 
 #define PLAYER_SPEED FP(1, 128)
 
+#define MAX_BULLETS 32
+#define MAX_ENEMIES 4
+
 #pragma bss-name(push, "ZEROPAGE")
 
 typedef enum {
@@ -37,13 +40,6 @@ typedef struct {
   unsigned char width;
   unsigned char height;
 } collidable;
-
-typedef struct {
-  collidable hitbox;
-  bullet_type type;
-  int delta_x;
-  int delta_y;
-} bullet;
 
 typedef struct {
   collidable hitbox;
@@ -88,9 +84,15 @@ unsigned char double_buffer[32];
 
 #pragma bss-name(push, "XRAM")
 // extra RAM at $6000-$7fff
+
 unsigned int wram_start;
-bullet bullets[32];
-enemy enemies[4];
+int bullets_x[MAX_BULLETS];
+int bullets_y[MAX_BULLETS];
+bullet_type bullets_type[MAX_BULLETS];
+int bullets_delta_x[MAX_BULLETS];
+int bullets_delta_y[MAX_BULLETS];
+
+enemy enemies[MAX_ENEMIES];
 
 #pragma bss-name(pop)
 
@@ -128,13 +130,17 @@ void init_ship (void) {
 
 void update_bullets (void) {
   for(i = 0; i < num_bullets; ++i) {
-    bullets[i].hitbox.x += bullets[i].delta_x;
-    bullets[i].hitbox.y += bullets[i].delta_y;
-    if (bullets[i].hitbox.x < FP(0, 0) || bullets[i].hitbox.x > FP(255, 0) ||
-        bullets[i].hitbox.y < FP(0, 0) || bullets[i].hitbox.y > FP(240, 0)) {
+    bullets_x[i] += bullets_delta_x[i];
+    bullets_y[i] += bullets_delta_y[i];
+    if (bullets_x[i] < FP(0, 0) || bullets_x[i] > FP(255, 0) ||
+        bullets_y[i] < FP(0, 0) || bullets_y[i] > FP(240, 0)) {
       // delete bullet
-      bullets[i] = bullets[num_bullets-1];
       --num_bullets;
+      bullets_x[i] = bullets_x[num_bullets];
+      bullets_y[i] = bullets_y[num_bullets];
+      bullets_delta_x[i] = bullets_delta_x[num_bullets];
+      bullets_delta_y[i] = bullets_delta_y[num_bullets];
+      bullets_type[i] = bullets_type[num_bullets];
       --i;
       continue;
     }
@@ -181,7 +187,6 @@ void go_to_title (void) {
 }
 
 void player_shoot (void) {
-  bullet new_bullet;
   if (player_shoot_cd > 0) return;
 
   switch(current_ship_mode) {
@@ -190,14 +195,12 @@ void player_shoot (void) {
     ++player_bullet_count;
     player_shoot_cd = 20;
     player_bullets_cd = 90;
-    new_bullet.hitbox.x = player_x - FP(3, 0);
-    new_bullet.hitbox.y = player_y - FP(8, 0);
-    new_bullet.hitbox.width = 6;
-    new_bullet.hitbox.height = 8;
-    new_bullet.type = PlayerBullet;
-    new_bullet.delta_x = FP(0, 0);
-    new_bullet.delta_y = -FP(1, 0);
-    bullets[num_bullets++] = new_bullet;
+    bullets_x[num_bullets] = player_x - FP(3, 0);
+    bullets_y[num_bullets] = player_y - FP(8, 0);
+    bullets_type[num_bullets] = PlayerBullet;
+    bullets_delta_x[num_bullets] = FP(0, 0);
+    bullets_delta_y[num_bullets] = -FP(1, 0);
+    num_bullets++;
     break;
   }
   return;
@@ -324,15 +327,15 @@ void draw_sprites (void) {
   }
 
   for(i = 0; i < num_bullets; ++i) {
-    switch(bullets[i].type) {
+    switch(bullets_type[i]) {
     case PlayerBullet:
-      oam_spr(INT(bullets[i].hitbox.x), INT(bullets[i].hitbox.y), 0x00, 0x01);
+      oam_spr(INT(bullets_x[i]), INT(bullets_y[i]), 0x00, 0x01);
       break;
     case PlayerApple:
-      oam_spr(INT(bullets[i].hitbox.x), INT(bullets[i].hitbox.y), 0x01, 0x02);
+      oam_spr(INT(bullets_x[i]), INT(bullets_y[i]), 0x01, 0x02);
       break;
     case EnemyBullet:
-      oam_spr(INT(bullets[i].hitbox.x), INT(bullets[i].hitbox.y), 0x00, 0x02);
+      oam_spr(INT(bullets_x[i]), INT(bullets_y[i]), 0x00, 0x02);
       break;
     }
   }
