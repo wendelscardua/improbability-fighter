@@ -70,3 +70,12 @@ const unsigned char victory_sprite[]={
                                       8,  0,0x2e,1,
                                       0x80
 };
+
+const unsigned char tetro_ship_sprite[]={
+
+                                         - 8,-12,0x8a,3,
+                                         - 8,- 4,0x8a,3,
+                                         0,- 4,0x8a,3,
+                                         0,  4,0x8a,3,
+                                         0x80
+};

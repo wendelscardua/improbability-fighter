@@ -27,14 +27,15 @@
 #define MAX_ENEMIES 4
 #define MAX_FORMATIONS 2
 
-#define IS_PLAYER_BULLET(index) (bullets_type[index] == PlayerBullet || bullets_type[index] == PlayerApple)
+#define IS_PLAYER_BULLET(index) (bullets_type[index] != EnemyBullet)
 
 #pragma bss-name(push, "ZEROPAGE")
 
 typedef enum {
               PlayerBullet,
               EnemyBullet,
-              PlayerApple
+              PlayerApple,
+              PlayerBlock
 } bullet_type;
 
 typedef enum  {
@@ -73,8 +74,10 @@ enum game_state {
 
 enum ship_mode {
                 Default,
-                Tree
-} current_ship_mode;
+                Tree,
+                Tetro,
+                None
+} current_ship_mode, old_ship_mode;
 
 unsigned char enemy_area_x, enemy_area_y;
 unsigned int player_x, player_y;
@@ -400,7 +403,7 @@ void player_shoot (void) {
     ++player_bullet_count;
     player_shoot_cd = 8;
     player_bullets_cd = 60;
-    bullets_x[num_bullets] = player_x - FP(3, 0);
+    bullets_x[num_bullets] = player_x - FP(4, 0);
     bullets_y[num_bullets] = player_y - FP(8, 0);
     bullets_type[num_bullets] = PlayerBullet;
     bullets_delta_x[num_bullets] = FP(0, 0);
@@ -412,7 +415,7 @@ void player_shoot (void) {
     ++player_bullet_count;
     player_shoot_cd = 12;
     player_bullets_cd = 45;
-    bullets_x[num_bullets] = player_x - FP(3, 0);
+    bullets_x[num_bullets] = player_x - FP(4, 0);
     bullets_y[num_bullets] = player_y - FP(8, 0);
     bullets_type[num_bullets] = PlayerApple;
     if (player_speed >= 0) {
@@ -421,6 +424,18 @@ void player_shoot (void) {
       bullets_delta_x[num_bullets] = -FP(0, 32);
     }
     bullets_delta_y[num_bullets] = FP(2, 0);
+    num_bullets++;
+    break;
+  case Tetro:
+    if (player_bullet_count >= 4) return;
+    ++player_bullet_count;
+    player_shoot_cd = 8;
+    player_bullets_cd = 75;
+    bullets_x[num_bullets] = player_x - FP(4, 0);
+    bullets_y[num_bullets] = player_y - FP(8, 0);
+    bullets_type[num_bullets] = PlayerBlock;
+    bullets_delta_x[num_bullets] = FP(0, 0);
+    bullets_delta_y[num_bullets] = -FP(1, 0);
     num_bullets++;
     break;
   }
@@ -554,11 +569,11 @@ void main (void) {
           chaos = 0;
           update_chaos();
           // TODO: random if more than these 2
-          if (current_ship_mode == Default) {
-            current_ship_mode = Tree;
-          } else {
-            current_ship_mode = Default;
-          }
+
+          old_ship_mode = current_ship_mode;
+          do {
+            current_ship_mode = rand8() % 4;
+          } while (current_ship_mode == old_ship_mode || current_ship_mode >= None) ;
         }
         if (chaos < 10) {
           switch(rand8() % 4) {
@@ -696,6 +711,9 @@ void draw_sprites (void) {
     case EnemyBullet:
       oam_spr(INT(bullets_x[i]), INT(bullets_y[i]), 0x00, 0x02);
       break;
+    case PlayerBlock:
+      oam_spr(INT(bullets_x[i]), INT(bullets_y[i]) & 0xf8, 0x8a, 0x03);
+      break;
     }
   }
 
@@ -713,6 +731,9 @@ void draw_sprites (void) {
         break;
       case Tree:
         oam_meta_spr(temp_x, temp_y, tree_ship_sprite);
+        break;
+      case Tetro:
+        oam_meta_spr(temp_x, temp_y, tetro_ship_sprite);
         break;
       }
     }
