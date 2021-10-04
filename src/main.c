@@ -193,13 +193,13 @@ void player_shoot (void) {
   case Default:
     if (player_bullet_count >= 3) return;
     ++player_bullet_count;
-    player_shoot_cd = 20;
-    player_bullets_cd = 90;
+    player_shoot_cd = 8;
+    player_bullets_cd = 60;
     bullets_x[num_bullets] = player_x - FP(3, 0);
     bullets_y[num_bullets] = player_y - FP(8, 0);
     bullets_type[num_bullets] = PlayerBullet;
     bullets_delta_x[num_bullets] = FP(0, 0);
-    bullets_delta_y[num_bullets] = -FP(1, 0);
+    bullets_delta_y[num_bullets] = -FP(2, 128);
     num_bullets++;
     break;
   }
