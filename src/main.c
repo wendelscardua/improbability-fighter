@@ -26,6 +26,8 @@
 #define MAX_BULLETS 64
 #define MAX_ENEMIES 4
 
+#define IS_PLAYER_BULLET(index) (bullets_type[index] == PlayerBullet || bullets_type[index] == PlayerApple)
+
 #pragma bss-name(push, "ZEROPAGE")
 
 typedef enum {
@@ -34,21 +36,25 @@ typedef enum {
               PlayerApple
 } bullet_type;
 
+typedef enum  {
+               Trio
+} pattern_type;
+
 typedef struct {
-  int x;
-  int y;
+  unsigned char x;
+  unsigned char y;
   unsigned char width;
   unsigned char height;
 } collidable;
 
 typedef struct {
-  collidable hitbox;
+  unsigned char column, row, width, height;
   unsigned char hp;
-  unsigned char row, column, width, height;
+  pattern_type pattern;
 } enemy;
 
 // GLOBAL VARIABLES
-  unsigned char arg1;
+unsigned char arg1;
 unsigned char arg2;
 unsigned char pad1;
 unsigned char pad1_new;
@@ -76,6 +82,9 @@ collidable temp_collidable_a, temp_collidable_b;
 unsigned char num_bullets;
 unsigned char num_enemies;
 
+unsigned char current_enemy_formation;
+unsigned char enemy_formation_index;
+
 #pragma bss-name(pop)
 // should be in the regular 0x300 ram now
 
@@ -92,7 +101,8 @@ bullet_type bullets_type[MAX_BULLETS];
 int bullets_delta_x[MAX_BULLETS];
 int bullets_delta_y[MAX_BULLETS];
 
-enemy enemies[MAX_ENEMIES];
+unsigned char enemy_hp[MAX_ENEMIES];
+unsigned char enemy_index[MAX_ENEMIES];
 
 #pragma bss-name(pop)
 
@@ -103,6 +113,24 @@ enemy enemies[MAX_ENEMIES];
 
 const unsigned char palette[16]={ 0x0f,0x00,0x10,0x30,0x0f,0x01,0x21,0x31,0x0f,0x06,0x16,0x26,0x0f,0x09,0x19,0x29 };
 
+const unsigned char emptiness[] = { 0x00,0x00,0x00,0x00 };
+
+const enemy enemies[] = { //c,  r, w, h, hp, pattern
+                         { 14, 24, 4, 2, 10, Trio }, //1-1
+
+                         {  6, 16, 4, 2, 10, Trio }, //1-2
+                         { 22, 16, 4, 2, 10, Trio },
+
+                         {  4,  4, 4, 2, 12, Trio }, //1-3
+                         { 10,  6, 4, 2, 12, Trio },
+                         { 18,  6, 4, 2, 12, Trio },
+                         { 24,  4, 4, 2, 12, Trio }
+};
+
+const unsigned char formations[1][] = {
+                                       {1, 0, 2, 1, 2, 4, 3, 4, 5, 6, 0}
+};
+
 void draw_sprites (void);
 
 void init_wram (void) {
@@ -111,13 +139,29 @@ void init_wram (void) {
   //wram_start = 0xcafe;
 }
 
+unsigned char load_enemy_row (void) {
+  temp = formations[current_enemy_formation][enemy_formation_index++];
+  if (temp == 0) return 0;
+  num_enemies = 0;
+  while(num_enemies < temp) {
+    i = formations[current_enemy_formation][enemy_formation_index++];
+    enemy_index[num_enemies] = i;
+    enemy_hp[num_enemies] = enemies[i].hp;
+    ++num_enemies;
+  }
+  return 1;
+}
+
 void load_enemy_formation (unsigned char index) {
+  current_enemy_formation = index;
+  enemy_formation_index = 0;
   vram_adr(NTADR_A(0,0));
-  unrle(enemy_formations[index]);
+  unrle(enemy_formation_nametables[index]);
   enemy_area_x = 0;
   enemy_area_y = 0xa0;
   set_scroll_x(enemy_area_x);
   set_scroll_y(enemy_area_y);
+  load_enemy_row();
 }
 
 void init_ship (void) {
@@ -128,21 +172,71 @@ void init_ship (void) {
   player_bullet_count = 0;
 }
 
+void delete_bullet (void) {
+  --num_bullets;
+  bullets_x[i] = bullets_x[num_bullets];
+  bullets_y[i] = bullets_y[num_bullets];
+  bullets_delta_x[i] = bullets_delta_x[num_bullets];
+  bullets_delta_y[i] = bullets_delta_y[num_bullets];
+  bullets_type[i] = bullets_type[num_bullets];
+  --i;
+}
+
+void delete_enemy (void) {
+  --num_enemies;
+  i = enemy_index[temp];
+  enemy_index[temp] = enemy_index[num_enemies];
+  enemy_hp[temp] = enemy_hp[num_enemies];
+  --temp;
+
+  temp_x = enemies[i].width;
+  for(temp_y = enemies[i].height; temp_y > 0; --temp_y) {
+    multi_vram_buffer_horz(emptiness, temp_x, NTADR_A(enemies[i].column, enemies[i].row + temp_y - 1));
+  }
+  // TODO kaboom
+
+  if (num_enemies == 0) {
+    // TODO next row
+  }
+}
+
 void update_bullets (void) {
+
   for(i = 0; i < num_bullets; ++i) {
     bullets_x[i] += bullets_delta_x[i];
     bullets_y[i] += bullets_delta_y[i];
     if (bullets_x[i] < FP(0, 0) || bullets_x[i] > FP(255, 0) ||
         bullets_y[i] < FP(0, 0) || bullets_y[i] > FP(240, 0)) {
       // delete bullet
-      --num_bullets;
-      bullets_x[i] = bullets_x[num_bullets];
-      bullets_y[i] = bullets_y[num_bullets];
-      bullets_delta_x[i] = bullets_delta_x[num_bullets];
-      bullets_delta_y[i] = bullets_delta_y[num_bullets];
-      bullets_type[i] = bullets_type[num_bullets];
-      --i;
+      delete_bullet();
       continue;
+    }
+  }
+
+  // XXX: hardcoded bullet size
+  temp_collidable_b.width = 4;
+  temp_collidable_b.height = 8;
+
+  for(temp = 0; temp < num_enemies; ++temp) {
+    i = enemy_index[temp];
+    temp_collidable_a.x = enemies[i].column * 8 + 2;
+    temp_collidable_a.y = enemies[i].row * 8 - enemy_area_y + 2;
+    temp_collidable_a.width = enemies[i].width * 8 - 4;
+    temp_collidable_a.height = enemies[i].height * 8 - 4;
+
+    for(i = 0; i < num_bullets; ++i) {
+      if (IS_PLAYER_BULLET(i)) {
+        temp_collidable_b.x = INT(bullets_x[i]);
+        temp_collidable_b.y = INT(bullets_y[i]);
+        if (check_collision(&temp_collidable_a, &temp_collidable_b)) {
+          delete_bullet();
+          --enemy_hp[temp];
+          if (enemy_hp[temp] == 0) {
+            delete_enemy();
+            break;
+          }
+        }
+      }
     }
   }
 }
