@@ -18,17 +18,48 @@
 #define SPRITE_0 4
 #define SPRITE_1 6
 
+#define FP(integer,fraction) ((integer<<4)|(fraction>>4))
+#define INT(unsigned_fixed_point) ((unsigned_fixed_point>>4)&0xff)
+
+#define PLAYER_SPEED FP(1, 128)
+
 #pragma bss-name(push, "ZEROPAGE")
 
+typedef enum {
+              PlayerBullet,
+              EnemyBullet,
+              PlayerApple
+} bullet_type;
+
+typedef struct {
+  int x;
+  int y;
+  unsigned char width;
+  unsigned char height;
+} collidable;
+
+typedef struct {
+  collidable hitbox;
+  bullet_type type;
+  int delta_x;
+  int delta_y;
+} bullet;
+
+typedef struct {
+  collidable hitbox;
+  unsigned char hp;
+  unsigned char row, column, width, height;
+} enemy;
+
 // GLOBAL VARIABLES
-unsigned char arg1;
+  unsigned char arg1;
 unsigned char arg2;
 unsigned char pad1;
 unsigned char pad1_new;
 unsigned char double_buffer_index;
 
 unsigned char temp, i, unseeded, temp_x, temp_y;
-unsigned int temp_int;
+unsigned int temp_int, temp_int_x, temp_int_y;
 
 enum game_state {
                  Title,
@@ -41,7 +72,13 @@ enum ship_mode {
 } current_ship_mode;
 
 unsigned char enemy_area_x, enemy_area_y;
-unsigned char player_x, player_y;
+unsigned int player_x, player_y;
+unsigned char player_shoot_cd, player_bullets_cd, player_bullet_count;
+
+collidable temp_collidable_a, temp_collidable_b;
+
+unsigned char num_bullets;
+unsigned char num_enemies;
 
 #pragma bss-name(pop)
 // should be in the regular 0x300 ram now
@@ -52,6 +89,8 @@ unsigned char double_buffer[32];
 #pragma bss-name(push, "XRAM")
 // extra RAM at $6000-$7fff
 unsigned int wram_start;
+bullet bullets[32];
+enemy enemies[4];
 
 #pragma bss-name(pop)
 
@@ -65,9 +104,9 @@ const unsigned char palette[16]={ 0x0f,0x00,0x10,0x30,0x0f,0x01,0x21,0x31,0x0f,0
 void draw_sprites (void);
 
 void init_wram (void) {
-  if (wram_start != 0xcafe)
-    memfill(&wram_start,0,0x2000);
-  wram_start = 0xcafe;
+  //if (wram_start != 0xcafe)
+  memfill(&wram_start,0,0x2000);
+  //wram_start = 0xcafe;
 }
 
 void load_enemy_formation (unsigned char index) {
@@ -81,8 +120,25 @@ void load_enemy_formation (unsigned char index) {
 
 void init_ship (void) {
   current_ship_mode = Default;
-  player_x = 0x80;
-  player_y = 0xa0;
+  player_x = FP(0x80, 0);
+  player_y = FP(0xa0, 0);
+  player_shoot_cd = 0;
+  player_bullet_count = 0;
+}
+
+void update_bullets (void) {
+  for(i = 0; i < num_bullets; ++i) {
+    bullets[i].hitbox.x += bullets[i].delta_x;
+    bullets[i].hitbox.y += bullets[i].delta_y;
+    if (bullets[i].hitbox.x < FP(0, 0) || bullets[i].hitbox.x > FP(255, 0) ||
+        bullets[i].hitbox.y < FP(0, 0) || bullets[i].hitbox.y > FP(240, 0)) {
+      // delete bullet
+      bullets[i] = bullets[num_bullets-1];
+      --num_bullets;
+      --i;
+      continue;
+    }
+  }
 }
 
 void start_game (void) {
@@ -106,6 +162,8 @@ void start_game (void) {
   current_game_state = GamePlay;
 
   init_ship();
+
+  num_bullets = 0;
 }
 
 void go_to_title (void) {
@@ -120,6 +178,29 @@ void go_to_title (void) {
   ppu_on_all(); //	turn on screen
   pal_fade_to(0, 4);
   current_game_state = Title;
+}
+
+void player_shoot (void) {
+  bullet new_bullet;
+  if (player_shoot_cd > 0) return;
+
+  switch(current_ship_mode) {
+  case Default:
+    if (player_bullet_count >= 3) return;
+    ++player_bullet_count;
+    player_shoot_cd = 20;
+    player_bullets_cd = 90;
+    new_bullet.hitbox.x = player_x - FP(3, 0);
+    new_bullet.hitbox.y = player_y - FP(8, 0);
+    new_bullet.hitbox.width = 6;
+    new_bullet.hitbox.height = 8;
+    new_bullet.type = PlayerBullet;
+    new_bullet.delta_x = FP(0, 0);
+    new_bullet.delta_y = -FP(1, 0);
+    bullets[num_bullets++] = new_bullet;
+    break;
+  }
+  return;
 }
 
 void main (void) {
@@ -166,8 +247,35 @@ void main (void) {
       }
       break;
     case GamePlay:
+      update_bullets();
+
+      if (player_shoot_cd > 0) --player_shoot_cd;
+      if (player_bullets_cd > 0) {
+        --player_bullets_cd;
+        if (player_bullets_cd == 0) {
+          player_bullet_count = 0;
+        }
+      }
+
       set_scroll_x(enemy_area_x);
       set_scroll_y(enemy_area_y);
+      if (pad_state(0) & (PAD_LEFT)) {
+        player_x -= PLAYER_SPEED;
+      }
+      if (pad_state(0) & (PAD_RIGHT)) {
+        player_x += PLAYER_SPEED;
+      }
+      if (pad_state(0) & (PAD_UP)) {
+        player_y -= PLAYER_SPEED;
+      }
+      if (pad_state(0) & (PAD_DOWN)) {
+        player_y += PLAYER_SPEED;
+      }
+      if (pad_state(0) & (PAD_A)) {
+        player_shoot();
+      }
+      // TODO bounded movement
+
       break;
     case GameEnd:
       if (get_pad_new(0) & PAD_START) {
@@ -176,6 +284,9 @@ void main (void) {
       break;
     }
 
+#ifdef DEBUG
+    gray_line();
+#endif
 
     // load the irq array with values it parse
     // ! CHANGED it, double buffered so we aren't editing the same
@@ -203,9 +314,26 @@ void draw_sprites (void) {
   oam_clear();
   if (current_game_state != GamePlay) return;
 
+  temp_x = INT(player_x);
+  temp_y = INT(player_y);
+
   switch(current_ship_mode) {
   case Default:
-    oam_meta_spr(player_x, player_y, default_ship_sprite);
+    oam_meta_spr(temp_x, temp_y, default_ship_sprite);
     break;
+  }
+
+  for(i = 0; i < num_bullets; ++i) {
+    switch(bullets[i].type) {
+    case PlayerBullet:
+      oam_spr(INT(bullets[i].hitbox.x), INT(bullets[i].hitbox.y), 0x00, 0x01);
+      break;
+    case PlayerApple:
+      oam_spr(INT(bullets[i].hitbox.x), INT(bullets[i].hitbox.y), 0x01, 0x02);
+      break;
+    case EnemyBullet:
+      oam_spr(INT(bullets[i].hitbox.x), INT(bullets[i].hitbox.y), 0x00, 0x02);
+      break;
+    }
   }
 }
