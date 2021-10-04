@@ -18,7 +18,7 @@
 #define SPRITE_0 4
 #define SPRITE_1 6
 
-#define FP(integer,fraction) ((integer<<4)|(fraction>>4))
+#define FP(integer,fraction) (((integer)<<4)|((fraction)>>4))
 #define INT(unsigned_fixed_point) ((unsigned_fixed_point>>4)&0xff)
 
 #define PLAYER_SPEED FP(1, 128)
@@ -104,6 +104,9 @@ int bullets_delta_y[MAX_BULLETS];
 
 unsigned char enemy_hp[MAX_ENEMIES];
 unsigned char enemy_index[MAX_ENEMIES];
+unsigned char enemy_shoot_cd[MAX_ENEMIES];
+unsigned char enemy_bullets_cd[MAX_ENEMIES];
+unsigned char enemy_bullet_count[MAX_ENEMIES];
 
 #pragma bss-name(pop)
 
@@ -148,6 +151,9 @@ unsigned char load_enemy_row (void) {
     i = formations[current_enemy_formation][enemy_formation_index++];
     enemy_index[num_enemies] = i;
     enemy_hp[num_enemies] = enemies[i].hp;
+    enemy_shoot_cd[num_enemies] = 0;
+    enemy_bullets_cd[num_enemies] = 0;
+    enemy_bullet_count[num_enemies] = 0;
     ++num_enemies;
   }
   return 1;
@@ -304,6 +310,43 @@ void player_shoot (void) {
   return;
 }
 
+void enemy_shoot (void) {
+  if (enemy_shoot_cd[temp] > 0 || num_bullets >= MAX_BULLETS) return;
+  i = enemy_index[temp];
+  temp_int_x = FP(enemies[i].column * 8 + enemies[i].width * 4 - 4, 0);
+  temp_int_y = FP(enemies[i].row * 8 + enemies[i].height * 4 - enemy_area_y, 0);
+
+  switch(enemies[i].pattern) {
+  case Trio:
+    if (enemy_bullet_count[temp] >= 2) return;
+    ++enemy_bullet_count[temp];
+    enemy_shoot_cd[temp] = 12;
+    enemy_bullets_cd[temp] = 90;
+    bullets_x[num_bullets] = temp_int_x;
+    bullets_y[num_bullets] = temp_int_y + FP(8, 0);
+    bullets_type[num_bullets] = EnemyBullet;
+    bullets_delta_x[num_bullets] = FP(0, 0);
+    bullets_delta_y[num_bullets] = FP(2, 0);
+    num_bullets++;
+
+    bullets_x[num_bullets] = temp_int_x + FP(8, 0);
+    bullets_y[num_bullets] = temp_int_y + FP(8, 0);
+    bullets_type[num_bullets] = EnemyBullet;
+    bullets_delta_x[num_bullets] = FP(0, 96);
+    bullets_delta_y[num_bullets] = FP(2, 0);
+    num_bullets++;
+
+    bullets_x[num_bullets] = temp_int_x - FP(8, 0);
+    bullets_y[num_bullets] = temp_int_y + FP(8, 0);
+    bullets_type[num_bullets] = EnemyBullet;
+    bullets_delta_x[num_bullets] = -FP(0, 96);
+    bullets_delta_y[num_bullets] = FP(2, 0);
+    num_bullets++;
+    break;
+  }
+  return;
+}
+
 void main (void) {
   set_mirroring(MIRROR_HORIZONTAL);
   bank_spr(1);
@@ -363,6 +406,17 @@ void main (void) {
         }
       }
 
+      for(temp = 0; temp < num_enemies; ++temp) {
+        if (enemy_shoot_cd[temp] > 0) --enemy_shoot_cd[temp];
+        if (enemy_bullets_cd[temp] > 0) {
+          --enemy_bullets_cd[temp];
+          if (enemy_bullets_cd[temp] == 0) {
+            enemy_bullet_count[temp] = 0;
+          }
+        }
+        enemy_shoot();
+      }
+
       set_scroll_x(enemy_area_x);
       set_scroll_y(enemy_area_y);
       if (pad_state(0) & (PAD_LEFT)) {
@@ -372,22 +426,22 @@ void main (void) {
         player_x += PLAYER_SPEED;
       }
       if (pad_state(0) & (PAD_UP)) {
-        player_y -= PLAYER_SPEED;
-      }
-      if (pad_state(0) & (PAD_DOWN)) {
-        player_y += PLAYER_SPEED;
-      }
-      if (pad_state(0) & (PAD_A)) {
-        player_shoot();
-      }
-      // TODO bounded movement
+              player_y -= PLAYER_SPEED;
+            }
+            if (pad_state(0) & (PAD_DOWN)) {
+              player_y += PLAYER_SPEED;
+            }
+            if (pad_state(0) & (PAD_A)) {
+              player_shoot();
+            }
+            // TODO bounded movement
 
-      break;
-    case GameEnd:
-      if (get_pad_new(0) & PAD_START) {
-        go_to_title();
-      }
-      break;
+            break;
+          case GameEnd:
+            if (get_pad_new(0) & PAD_START) {
+              go_to_title();
+            }
+            break;
     }
 
 #ifdef DEBUG
