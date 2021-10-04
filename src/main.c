@@ -76,8 +76,9 @@ enum ship_mode {
 unsigned char enemy_area_x, enemy_area_y;
 unsigned int player_x, player_y;
 unsigned char player_shoot_cd, player_bullets_cd, player_bullet_count;
+unsigned char health, chaos;
 
-collidable temp_collidable_a, temp_collidable_b;
+collidable temp_collidable_a, temp_collidable_b, player_collidable;
 
 unsigned char num_bullets;
 unsigned char num_enemies;
@@ -180,12 +181,38 @@ void load_enemy_formation (unsigned char index) {
   load_enemy_row();
 }
 
+#define HITBOX_WIDTH 8
+#define HITBOX_HEIGHT 8
+
 void init_ship (void) {
   current_ship_mode = Default;
   player_x = FP(0x80, 0);
   player_y = FP(0xa0, 0);
   player_shoot_cd = 0;
   player_bullet_count = 0;
+  player_bullets_cd = 0;
+  health = 10;
+  chaos = 0;
+  player_collidable.width = HITBOX_WIDTH;
+  player_collidable.height = HITBOX_HEIGHT;
+  player_collidable.x = INT(player_x) - HITBOX_WIDTH/2;
+  player_collidable.y = INT(player_y) - HITBOX_HEIGHT/2;
+}
+
+void update_health (void) {
+  // XXX: cheating, if updating health it's below 10
+  one_vram_buffer(0x10, NTADR_A(11, 2));
+  one_vram_buffer(0x10 + health, NTADR_A(12, 2));
+}
+
+void update_chaos (void) {
+  if (chaos == 10) {
+    one_vram_buffer(0x11, NTADR_A(26, 2));
+    one_vram_buffer(0x10, NTADR_A(27, 2));
+  } else {
+    one_vram_buffer(0x10, NTADR_A(26, 2));
+    one_vram_buffer(0x10 + chaos, NTADR_A(27, 2));
+  }
 }
 
 void delete_bullet (void) {
@@ -249,15 +276,27 @@ void update_bullets (void) {
     temp_collidable_a.height = enemy_height[temp];
 
     for(i = get_frame_count() % 2; i < num_bullets; i+=2) {
+      temp_collidable_b.x = INT(bullets_x[i]);
+      temp_collidable_b.y = INT(bullets_y[i]);
       if (IS_PLAYER_BULLET(i)) {
-        temp_collidable_b.x = INT(bullets_x[i]);
-        temp_collidable_b.y = INT(bullets_y[i]);
         if (check_collision(&temp_collidable_a, &temp_collidable_b)) {
           delete_bullet();
           --enemy_hp[temp];
           if (enemy_hp[temp] == 0) {
             delete_enemy();
             break;
+          }
+        }
+      } else {
+        if (check_collision(&player_collidable, &temp_collidable_b)) {
+          delete_bullet();
+          if (health > 0) {
+            --health;
+            update_health();
+            if (health == 0) {
+              // TODO game over
+              break;
+            }
           }
         }
       }
@@ -446,21 +485,25 @@ void main (void) {
       if (pad_state(0) & (PAD_LEFT)) {
         if (player_x > FP(X_MARGIN, 0)) {
           player_x -= PLAYER_SPEED;
+          player_collidable.x = INT(player_x) - HITBOX_WIDTH/2;
         }
       }
       if (pad_state(0) & (PAD_RIGHT)) {
         if (player_x < FP(0xff - X_MARGIN, 0)) {
           player_x += PLAYER_SPEED;
+          player_collidable.x = INT(player_x) - HITBOX_WIDTH/2;
         }
       }
       if (pad_state(0) & (PAD_UP)) {
         if (player_y > FP(TOP_MARGIN, 0)) {
           player_y -= PLAYER_SPEED;
+          player_collidable.y = INT(player_y) - HITBOX_HEIGHT/2;
         }
       }
       if (pad_state(0) & (PAD_DOWN)) {
         if (player_y < FP(0xef - BOTTOM_MARGIN, 0)) {
           player_y += PLAYER_SPEED;
+          player_collidable.y = INT(player_y) - HITBOX_HEIGHT/2;
         }
       }
       if (pad_state(0) & (PAD_A)) {
