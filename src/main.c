@@ -102,11 +102,15 @@ bullet_type bullets_type[MAX_BULLETS];
 int bullets_delta_x[MAX_BULLETS];
 int bullets_delta_y[MAX_BULLETS];
 
-unsigned char enemy_hp[MAX_ENEMIES];
 unsigned char enemy_index[MAX_ENEMIES];
+unsigned char enemy_hp[MAX_ENEMIES];
 unsigned char enemy_shoot_cd[MAX_ENEMIES];
 unsigned char enemy_bullets_cd[MAX_ENEMIES];
 unsigned char enemy_bullet_count[MAX_ENEMIES];
+unsigned char enemy_x[MAX_ENEMIES];
+unsigned char enemy_y[MAX_ENEMIES];
+unsigned char enemy_width[MAX_ENEMIES];
+unsigned char enemy_height[MAX_ENEMIES];
 
 #pragma bss-name(pop)
 
@@ -154,6 +158,11 @@ unsigned char load_enemy_row (void) {
     enemy_shoot_cd[num_enemies] = 0;
     enemy_bullets_cd[num_enemies] = 0;
     enemy_bullet_count[num_enemies] = 0;
+    enemy_x[num_enemies] = enemies[i].column * 8 + 2;
+    enemy_y[num_enemies] = enemies[i].row * 8 + 2;
+    enemy_width[num_enemies] = enemies[i].width * 8 - 4;
+    enemy_height[num_enemies] = enemies[i].height * 8 - 4;
+
     ++num_enemies;
   }
   return 1;
@@ -194,6 +203,14 @@ void delete_enemy (void) {
   i = enemy_index[temp];
   enemy_index[temp] = enemy_index[num_enemies];
   enemy_hp[temp] = enemy_hp[num_enemies];
+  enemy_shoot_cd[temp] = enemy_shoot_cd[num_enemies];
+  enemy_bullets_cd[temp] = enemy_bullets_cd[num_enemies];
+  enemy_bullet_count[temp] = enemy_bullet_count[num_enemies];
+  enemy_x[temp] = enemy_x[num_enemies];
+  enemy_y[temp] = enemy_y[num_enemies];
+  enemy_width[temp] = enemy_width[num_enemies];
+  enemy_height[temp] = enemy_height[num_enemies];
+
   --temp;
 
   temp_x = enemies[i].width;
@@ -210,7 +227,6 @@ void delete_enemy (void) {
 }
 
 void update_bullets (void) {
-
   for(i = 0; i < num_bullets; ++i) {
     bullets_x[i] += bullets_delta_x[i];
     bullets_y[i] += bullets_delta_y[i];
@@ -227,11 +243,10 @@ void update_bullets (void) {
   temp_collidable_b.height = 8;
 
   for(temp = 0; temp < num_enemies; ++temp) {
-    i = enemy_index[temp];
-    temp_collidable_a.x = enemies[i].column * 8 + 2;
-    temp_collidable_a.y = enemies[i].row * 8 - enemy_area_y + 2;
-    temp_collidable_a.width = enemies[i].width * 8 - 4;
-    temp_collidable_a.height = enemies[i].height * 8 - 4;
+    temp_collidable_a.x = enemy_x[temp];
+    temp_collidable_a.y = enemy_y[temp] - enemy_area_y;
+    temp_collidable_a.width = enemy_width[temp];
+    temp_collidable_a.height = enemy_height[temp];
 
     for(i = 0; i < num_bullets; ++i) {
       if (IS_PLAYER_BULLET(i)) {
@@ -312,9 +327,8 @@ void player_shoot (void) {
 
 void enemy_shoot (void) {
   if (enemy_shoot_cd[temp] > 0 || num_bullets >= MAX_BULLETS) return;
-  i = enemy_index[temp];
-  temp_int_x = FP(enemies[i].column * 8 + enemies[i].width * 4 - 4, 0);
-  temp_int_y = FP(enemies[i].row * 8 + enemies[i].height * 4 - enemy_area_y, 0);
+  temp_int_x = FP(enemy_x[temp] + enemy_width[temp] / 2 - 4, 0);
+  temp_int_y = FP(enemy_y[temp] + enemy_height[temp] / 2 - enemy_area_y, 0);
 
   switch(enemies[i].pattern) {
   case Trio:
@@ -426,22 +440,22 @@ void main (void) {
         player_x += PLAYER_SPEED;
       }
       if (pad_state(0) & (PAD_UP)) {
-              player_y -= PLAYER_SPEED;
-            }
-            if (pad_state(0) & (PAD_DOWN)) {
-              player_y += PLAYER_SPEED;
-            }
-            if (pad_state(0) & (PAD_A)) {
-              player_shoot();
-            }
-            // TODO bounded movement
+        player_y -= PLAYER_SPEED;
+      }
+      if (pad_state(0) & (PAD_DOWN)) {
+        player_y += PLAYER_SPEED;
+      }
+      if (pad_state(0) & (PAD_A)) {
+        player_shoot();
+      }
+      // TODO bounded movement
 
-            break;
-          case GameEnd:
-            if (get_pad_new(0) & PAD_START) {
-              go_to_title();
-            }
-            break;
+      break;
+    case GameEnd:
+      if (get_pad_new(0) & PAD_START) {
+        go_to_title();
+      }
+      break;
     }
 
 #ifdef DEBUG
