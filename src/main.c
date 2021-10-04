@@ -257,28 +257,29 @@ void update_bullets (void) {
   for(i = 0; i < num_bullets; ++i) {
     bullets_x[i] += bullets_delta_x[i];
     bullets_y[i] += bullets_delta_y[i];
-    if (bullets_x[i] < FP(0, 0) || bullets_x[i] > FP(255, 0) ||
-        bullets_y[i] < FP(0, 0) || bullets_y[i] > FP(240, 0)) {
-      // delete bullet
-      delete_bullet();
-      continue;
-    }
   }
 
   // XXX: hardcoded bullet size
   temp_collidable_b.width = 4;
   temp_collidable_b.height = 8;
 
-  for(temp = 0; temp < num_enemies; ++temp) {
-    temp_collidable_a.x = enemy_x[temp];
-    temp_collidable_a.y = enemy_y[temp] - enemy_area_y;
-    temp_collidable_a.width = enemy_width[temp];
-    temp_collidable_a.height = enemy_height[temp];
+  for(i = get_frame_count() % 4; i < num_bullets; i+=4) {
+    if (bullets_x[i] < FP(0, 0) || bullets_x[i] > FP(255, 0) ||
+        bullets_y[i] < FP(0, 0) || bullets_y[i] > FP(240, 0)) {
+      // delete bullet
+      delete_bullet();
+      continue;
+    }
+    temp_collidable_b.x = INT(bullets_x[i]);
+    temp_collidable_b.y = INT(bullets_y[i]);
+    if (IS_PLAYER_BULLET(i)) {
+      if (temp_collidable_b.y > 0x64) continue;
+      for(temp = 0; temp < num_enemies; ++temp) {
+        temp_collidable_a.x = enemy_x[temp];
+        temp_collidable_a.y = enemy_y[temp] - enemy_area_y;
+        temp_collidable_a.width = enemy_width[temp];
+        temp_collidable_a.height = enemy_height[temp];
 
-    for(i = get_frame_count() % 2; i < num_bullets; i+=2) {
-      temp_collidable_b.x = INT(bullets_x[i]);
-      temp_collidable_b.y = INT(bullets_y[i]);
-      if (IS_PLAYER_BULLET(i)) {
         if (check_collision(&temp_collidable_a, &temp_collidable_b)) {
           delete_bullet();
           --enemy_hp[temp];
@@ -287,16 +288,16 @@ void update_bullets (void) {
             break;
           }
         }
-      } else {
-        if (check_collision(&player_collidable, &temp_collidable_b)) {
-          delete_bullet();
-          if (health > 0) {
-            --health;
-            update_health();
-            if (health == 0) {
-              // TODO game over
-              break;
-            }
+      }
+    } else {
+      if (check_collision(&player_collidable, &temp_collidable_b)) {
+        delete_bullet();
+        if (health > 0) {
+          --health;
+          update_health();
+          if (health == 0) {
+            // TODO game over
+            break;
           }
         }
       }
