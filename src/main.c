@@ -84,6 +84,7 @@ unsigned char num_enemies;
 
 unsigned char current_enemy_formation;
 unsigned char enemy_formation_index;
+unsigned char enemy_row_movement;
 
 #pragma bss-name(pop)
 // should be in the regular 0x300 ram now
@@ -121,10 +122,10 @@ const enemy enemies[] = { //c,  r, w, h, hp, pattern
                          {  6, 16, 4, 2, 10, Trio }, //1-2
                          { 22, 16, 4, 2, 10, Trio },
 
-                         {  4,  4, 4, 2, 12, Trio }, //1-3
-                         { 10,  6, 4, 2, 12, Trio },
-                         { 18,  6, 4, 2, 12, Trio },
-                         { 24,  4, 4, 2, 12, Trio }
+                         {  4,  6, 4, 2, 12, Trio }, //1-3
+                         { 10,  8, 4, 2, 12, Trio },
+                         { 18,  8, 4, 2, 12, Trio },
+                         { 24,  6, 4, 2, 12, Trio }
 };
 
 const unsigned char formations[1][] = {
@@ -196,7 +197,9 @@ void delete_enemy (void) {
   // TODO kaboom
 
   if (num_enemies == 0) {
-    // TODO next row
+    if (load_enemy_row()) {
+      enemy_row_movement = 64;
+    }
   }
 }
 
@@ -264,6 +267,7 @@ void start_game (void) {
   init_ship();
 
   num_bullets = 0;
+  enemy_row_movement = 0;
 }
 
 void go_to_title (void) {
@@ -344,6 +348,11 @@ void main (void) {
       }
       break;
     case GamePlay:
+      if (enemy_row_movement > 0) {
+        --enemy_row_movement;
+        --enemy_area_y;
+      }
+
       update_bullets();
 
       if (player_shoot_cd > 0) --player_shoot_cd;
