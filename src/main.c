@@ -38,7 +38,8 @@ typedef enum {
 } bullet_type;
 
 typedef enum  {
-               Trio
+               Trio,
+               Targeter
 } pattern_type;
 
 typedef struct {
@@ -116,6 +117,7 @@ unsigned char enemy_x[MAX_ENEMIES];
 unsigned char enemy_y[MAX_ENEMIES];
 unsigned char enemy_width[MAX_ENEMIES];
 unsigned char enemy_height[MAX_ENEMIES];
+unsigned char enemy_pattern[MAX_ENEMIES];
 
 #pragma bss-name(pop)
 
@@ -139,14 +141,14 @@ const enemy enemies[] = { //c,  r, w, h, hp, pattern
                          { 18,  8, 4, 2, 12, Trio },
                          { 24,  6, 4, 2, 12, Trio },
 
-                         { 12, 23, 8, 3, 12, Trio }, //2-1
+                         { 12, 23, 8, 3, 12, Targeter }, //2-1
 
-                         {  4, 15, 8, 3, 12, Trio }, //2-2
-                         { 20, 15, 8, 3, 12, Trio },
+                         {  4, 15, 8, 3, 12, Targeter }, //2-2
+                         { 20, 15, 8, 3, 12, Targeter },
 
-                         {  4,  6, 8, 3, 12, Trio }, //2-3
-                         { 12,  7, 8, 3, 12, Trio },
-                         { 20,  6, 8, 3, 12, Trio }
+                         {  4,  6, 8, 3, 12, Targeter }, //2-3
+                         { 12,  7, 8, 3, 12, Targeter },
+                         { 20,  6, 8, 3, 12, Targeter }
 
 };
 
@@ -191,31 +193,32 @@ unsigned char load_enemy_row (void) {
     i = formations[current_enemy_formation][enemy_formation_index++];
     enemy_index[num_enemies] = i;
     enemy_hp[num_enemies] = enemies[i].hp;
-enemy_shoot_cd[num_enemies] = 0;
-                        enemy_bullets_cd[num_enemies] = 0;
-                        enemy_bullet_count[num_enemies] = 0;
-                        enemy_x[num_enemies] = enemies[i].column * 8 + 2;
-                        enemy_y[num_enemies] = enemies[i].row * 8 + 2;
-                        enemy_width[num_enemies] = enemies[i].width * 8 - 4;
-                        enemy_height[num_enemies] = enemies[i].height * 8 - 4;
+    enemy_shoot_cd[num_enemies] = 0;
+    enemy_bullets_cd[num_enemies] = 0;
+    enemy_bullet_count[num_enemies] = 0;
+    enemy_x[num_enemies] = enemies[i].column * 8 + 2;
+    enemy_y[num_enemies] = enemies[i].row * 8 + 2;
+    enemy_width[num_enemies] = enemies[i].width * 8 - 4;
+    enemy_height[num_enemies] = enemies[i].height * 8 - 4;
+    enemy_pattern[num_enemies] = enemies[i].pattern;
 
-                        ++num_enemies;
-                      }
-                      enemy_row_movement = 64;
-                      return 1;
-                    }
+    ++num_enemies;
+  }
+  enemy_row_movement = 64;
+  return 1;
+}
 
-                    void load_enemy_formation (unsigned char index) {
-                      current_enemy_formation = index;
-                      enemy_formation_index = 0;
-                      vram_adr(NTADR_A(0,0));
-                      unrle(enemy_formation_nametables[index]);
-                      enemy_area_x = 0;
-                      enemy_area_y = 0xa0;
-                      set_scroll_x(enemy_area_x);
-                      set_scroll_y(enemy_area_y);
-                      load_enemy_row();
-                    }
+void load_enemy_formation (unsigned char index) {
+  current_enemy_formation = index;
+  enemy_formation_index = 0;
+  vram_adr(NTADR_A(0,0));
+  unrle(enemy_formation_nametables[index]);
+  enemy_area_x = 0;
+  enemy_area_y = 0xa0;
+  set_scroll_x(enemy_area_x);
+  set_scroll_y(enemy_area_y);
+  load_enemy_row();
+}
 
 #define HITBOX_WIDTH 8
 #define HITBOX_HEIGHT 8
@@ -276,6 +279,7 @@ void delete_enemy (void) {
   enemy_y[temp] = enemy_y[num_enemies];
   enemy_width[temp] = enemy_width[num_enemies];
   enemy_height[temp] = enemy_height[num_enemies];
+  enemy_pattern[temp] = enemy_pattern[num_enemies];
 
   --temp;
 
@@ -430,7 +434,7 @@ void enemy_shoot (void) {
   temp_int_x = FP(enemy_x[temp] + enemy_width[temp] / 2 - 4, 0);
   temp_int_y = FP(enemy_y[temp] + enemy_height[temp] / 2 - enemy_area_y, 0);
 
-  switch(enemies[i].pattern) {
+  switch(enemy_pattern[temp]) {
   case Trio:
     if (enemy_bullet_count[temp] >= 2) return;
     ++enemy_bullet_count[temp];
@@ -454,6 +458,33 @@ void enemy_shoot (void) {
     bullets_y[num_bullets] = temp_int_y + FP(8, 0);
     bullets_type[num_bullets] = EnemyBullet;
     bullets_delta_x[num_bullets] = -FP(0, 96);
+    bullets_delta_y[num_bullets] = FP(2, 0);
+    num_bullets++;
+    break;
+  case Targeter:
+    if (enemy_bullet_count[temp] >= 3) return;
+    ++enemy_bullet_count[temp];
+    enemy_shoot_cd[temp] = 15;
+    enemy_bullets_cd[temp] = 90;
+    bullets_x[num_bullets] = temp_int_x - FP(0x10, 0);
+    bullets_y[num_bullets] = temp_int_y + FP(8, 0);
+    bullets_type[num_bullets] = EnemyBullet;
+    if (player_x >= bullets_x[num_bullets]) {
+      bullets_delta_x[num_bullets] = FP(0, 64);
+    } else {
+      bullets_delta_x[num_bullets] = -FP(0, 128);
+    }
+    bullets_delta_y[num_bullets] = FP(2, 0);
+    num_bullets++;
+
+    bullets_x[num_bullets] = temp_int_x + FP(0x10, 0);
+    bullets_y[num_bullets] = temp_int_y + FP(8, 0);
+    bullets_type[num_bullets] = EnemyBullet;
+    if (player_x >= bullets_x[num_bullets]) {
+      bullets_delta_x[num_bullets] = FP(0, 128);
+    } else {
+      bullets_delta_x[num_bullets] = -FP(0, 64);
+    }
     bullets_delta_y[num_bullets] = FP(2, 0);
     num_bullets++;
     break;
