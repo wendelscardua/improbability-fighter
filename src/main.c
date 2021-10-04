@@ -407,6 +407,11 @@ void main (void) {
       }
       break;
     case GamePlay:
+      double_buffer[double_buffer_index++] = 0xc8;
+      double_buffer[double_buffer_index++] = 0xf6;
+      double_buffer[double_buffer_index++] = 0x20;
+      double_buffer[double_buffer_index++] = 0x00;
+
       if (enemy_row_movement > 0) {
         --enemy_row_movement;
         --enemy_area_y;
