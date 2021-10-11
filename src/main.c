@@ -474,6 +474,7 @@ void enemy_shoot (void) {
     bullets_delta_x[num_bullets] = FP(0, 0);
     bullets_delta_y[num_bullets] = FP(2, 0);
     num_bullets++;
+    if (num_bullets >= MAX_BULLETS) break;
 
     bullets_x[num_bullets] = temp_int_x + FP(8, 0);
     bullets_y[num_bullets] = temp_int_y + FP(8, 0);
@@ -481,6 +482,7 @@ void enemy_shoot (void) {
     bullets_delta_x[num_bullets] = FP(0, 96);
     bullets_delta_y[num_bullets] = FP(2, 0);
     num_bullets++;
+    if (num_bullets >= MAX_BULLETS) break;
 
     bullets_x[num_bullets] = temp_int_x - FP(8, 0);
     bullets_y[num_bullets] = temp_int_y + FP(8, 0);
@@ -504,6 +506,7 @@ void enemy_shoot (void) {
     }
     bullets_delta_y[num_bullets] = FP(2, 0);
     num_bullets++;
+    if (num_bullets >= MAX_BULLETS) break;
 
     bullets_x[num_bullets] = temp_int_x + FP(0x10, 0);
     bullets_y[num_bullets] = temp_int_y + FP(8, 0);
