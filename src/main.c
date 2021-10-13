@@ -314,6 +314,12 @@ void update_bullets (void) {
     if (bullets_type[i] == PlayerApple && bullets_delta_y[i] > -FP(2, 0)) {
       bullets_delta_y[i] -= FP(0, 16);
     }
+    if (bullets_x[i] < FP(0, 0) || bullets_x[i] > FP(255, 0) ||
+        bullets_y[i] < FP(0, 0) || bullets_y[i] > FP(240, 0)) {
+      // delete bullet
+      delete_bullet();
+      continue;
+    }
   }
 
   // XXX: hardcoded bullet size
@@ -321,12 +327,6 @@ void update_bullets (void) {
   temp_collidable_b.height = 8;
 
   for(i = get_frame_count() % 4; i < num_bullets; i+=4) {
-    if (bullets_x[i] < FP(0, 0) || bullets_x[i] > FP(255, 0) ||
-        bullets_y[i] < FP(0, 0) || bullets_y[i] > FP(240, 0)) {
-      // delete bullet
-      delete_bullet();
-      continue;
-    }
     if (health == 0 || current_enemy_formation == MAX_FORMATIONS) continue;
 
     temp_collidable_b.x = INT(bullets_x[i]);
