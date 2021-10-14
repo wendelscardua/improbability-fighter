@@ -749,23 +749,6 @@ void draw_sprites (void) {
   oam_clear();
   if (current_game_state != GamePlay) return;
 
-  for(i = 0; i < num_bullets; ++i) {
-    switch(bullets_type[i]) {
-    case PlayerBullet:
-      oam_spr(INT(bullets_x[i]), INT(bullets_y[i]), 0x00, 0x01);
-      break;
-    case PlayerApple:
-      oam_spr(INT(bullets_x[i]), INT(bullets_y[i]), 0x01, 0x02);
-      break;
-    case EnemyBullet:
-      oam_spr(INT(bullets_x[i]), INT(bullets_y[i]), 0x00, 0x02);
-      break;
-    case PlayerBlock:
-      oam_spr(INT(bullets_x[i]), INT(bullets_y[i]) & 0xf8, 0x8a, 0x03);
-      break;
-    }
-  }
-
   temp_x = INT(player_x);
   temp_y = INT(player_y);
   if (current_enemy_formation == MAX_FORMATIONS) {
@@ -788,5 +771,22 @@ void draw_sprites (void) {
     }
   } else {
     oam_meta_spr(temp_x, temp_y, game_over_sprite);
+  }
+
+  for(i = get_frame_count() % 2; i < num_bullets; i += 2) {
+    switch(bullets_type[i]) {
+    case PlayerBullet:
+      oam_spr(INT(bullets_x[i]), INT(bullets_y[i]), 0x00, 0x01);
+      break;
+    case PlayerApple:
+      oam_spr(INT(bullets_x[i]), INT(bullets_y[i]), 0x01, 0x02);
+      break;
+    case EnemyBullet:
+      oam_spr(INT(bullets_x[i]), INT(bullets_y[i]), 0x00, 0x02);
+      break;
+    case PlayerBlock:
+      oam_spr(INT(bullets_x[i]), INT(bullets_y[i]) & 0xf8, 0x8a, 0x03);
+      break;
+    }
   }
 }
