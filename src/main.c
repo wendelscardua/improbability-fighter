@@ -750,16 +750,16 @@ void draw_sprites (void) {
   for(i = get_frame_count() % 2; i < get_num_bullets(); i += 2) {
     switch(bullets_type[i]) {
     case PlayerBullet:
-      oam_spr(INT(bullets_x[i]), INT(bullets_y[i]), 0x00, 0x01);
+      oam_spr(bullets_x[i], bullets_y[i], 0x00, 0x01);
       break;
     case PlayerApple:
-      oam_spr(INT(bullets_x[i]), INT(bullets_y[i]), 0x01, 0x02);
+      oam_spr(bullets_x[i], bullets_y[i], 0x01, 0x02);
       break;
     case EnemyBullet:
-      oam_spr(INT(bullets_x[i]), INT(bullets_y[i]), 0x00, 0x02);
+      oam_spr(bullets_x[i], bullets_y[i], 0x00, 0x02);
       break;
     case PlayerBlock:
-      oam_spr(INT(bullets_x[i]), INT(bullets_y[i]) & 0xf8, 0x8a, 0x03);
+      oam_spr(bullets_x[i], bullets_y[i] & 0xf8, 0x8a, 0x03);
       break;
     }
   }
