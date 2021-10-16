@@ -719,10 +719,7 @@ void main (void) {
   }
 }
 
-void draw_sprites (void) {
-  oam_clear();
-  if (current_game_state != GamePlay) return;
-
+void draw_ship (void) {
   temp_x = INT(player_x);
   temp_y = INT(player_y);
   if (current_enemy_formation == MAX_FORMATIONS) {
@@ -746,7 +743,9 @@ void draw_sprites (void) {
   } else {
     oam_meta_spr(temp_x, temp_y, game_over_sprite);
   }
+}
 
+void draw_bullets (void) {
   for(i = get_frame_count() % 2; i < get_num_bullets(); i += 2) {
     switch(bullets_type[i]) {
     case PlayerBullet:
@@ -763,4 +762,13 @@ void draw_sprites (void) {
       break;
     }
   }
+}
+
+void draw_sprites (void) {
+  oam_clear();
+  if (current_game_state != GamePlay) return;
+
+  draw_ship();
+
+  draw_bullets();
 }
