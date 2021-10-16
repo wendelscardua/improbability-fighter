@@ -8,6 +8,7 @@
 #include "lib/unrle.h"
 #include "mmc3/mmc3_code.h"
 #include "mmc3/mmc3_code.c"
+#include "bullets.h"
 #include "sprites.h"
 #include "../assets/nametables.h"
 
@@ -28,24 +29,17 @@
 
 #define FP(integer,fraction) (((integer)<<8)|((fraction)>>0))
 #define INT(unsigned_fixed_point) ((unsigned_fixed_point>>8)&0xff)
+#define FRAC(unsigned_fixed_point) ((unsigned_fixed_point)&0xff)
 
 #define PLAYER_SPEED FP(1, 128)
 #define TETRO_SPEED FP(8, 128)
 
-#define MAX_BULLETS 32
 #define MAX_ENEMIES 4
 #define MAX_FORMATIONS 2
 
 #define IS_PLAYER_BULLET(index) (bullets_type[index] != EnemyBullet)
 
 #pragma bss-name(push, "ZEROPAGE")
-
-typedef enum {
-              PlayerBullet,
-              EnemyBullet,
-              PlayerApple,
-              PlayerBlock
-} bullet_type;
 
 typedef enum  {
                Trio,
@@ -97,7 +91,6 @@ unsigned char chaos_counter;
 
 collidable temp_collidable_a, temp_collidable_b, player_collidable;
 
-unsigned char num_bullets;
 unsigned char num_enemies;
 
 unsigned char current_enemy_formation;
@@ -109,12 +102,6 @@ unsigned char enemy_row_movement;
 
 char irq_array[32];
 unsigned char double_buffer[32];
-
-unsigned int bullets_x[MAX_BULLETS];
-unsigned int bullets_y[MAX_BULLETS];
-bullet_type bullets_type[MAX_BULLETS];
-int bullets_delta_x[MAX_BULLETS];
-int bullets_delta_y[MAX_BULLETS];
 
 unsigned char enemy_index[MAX_ENEMIES];
 unsigned char enemy_hp[MAX_ENEMIES];
@@ -271,16 +258,6 @@ void update_chaos (void) {
   }
 }
 
-void delete_bullet (void) {
-  --num_bullets;
-  bullets_x[i] = bullets_x[num_bullets];
-  bullets_y[i] = bullets_y[num_bullets];
-  bullets_delta_x[i] = bullets_delta_x[num_bullets];
-  bullets_delta_y[i] = bullets_delta_y[num_bullets];
-  bullets_type[i] = bullets_type[num_bullets];
-  --i;
-}
-
 void delete_enemy (void) {
   --num_enemies;
   i = enemy_index[temp];
@@ -309,18 +286,25 @@ void delete_enemy (void) {
 }
 
 void update_bullets (void) {
-  for(i = 0; i < num_bullets; ++i) {
-    bullets_x[i] += bullets_delta_x[i];
-    bullets_y[i] += bullets_delta_y[i];
-    if (bullets_type[i] == PlayerApple && bullets_delta_y[i] > -FP(2, 0)) {
-      bullets_delta_y[i] -= FP(0, 16);
+  for(i = 0; i < get_num_bullets(); ++i) {
+    temp_int = FP(bullets_x[i], bullets_sx[i]) + FP(bullets_delta_x[i], bullets_delta_sx[i]);
+    bullets_x[i] = INT(temp_int);
+    bullets_sx[i] = FRAC(temp_int);
+    temp_int = FP(bullets_y[i], bullets_sy[i]) + FP(bullets_delta_y[i], bullets_delta_sy[i]);
+    bullets_y[i] = INT(temp_int);
+    bullets_sy[i] = FRAC(temp_int);
+    if (bullets_type[i] == PlayerApple && FP(bullets_delta_y[i], bullets_delta_sy[i]) > -FP(2, 0)) {
+      temp_int = FP(bullets_delta_y[i], bullets_delta_sy[i]) - FP(0, 16);
+      bullets_delta_y[i] = INT(temp_int);
+      bullets_delta_sy[i] = FRAC(temp_int);
     }
-    if (bullets_x[i] < FP(8, 0) ||
-        bullets_x[i] > FP(247, 0) ||
-        bullets_y[i] < FP(8, 0) ||
-        bullets_y[i] > FP(240, 0)) {
+    if (FP(bullets_x[i], bullets_sx[i]) < FP(8, 0) ||
+        FP(bullets_x[i], bullets_sx[i]) > FP(247, 0) ||
+        FP(bullets_y[i], bullets_sy[i]) < FP(8, 0) ||
+        FP(bullets_y[i], bullets_sy[i]) > FP(240, 0)) {
       // delete bullet
-      delete_bullet();
+      delete_bullet(i);
+      --i;
       continue;
     }
   }
@@ -335,11 +319,11 @@ void compute_collisions (void) {
   temp_collidable_b.width = 4;
   temp_collidable_b.height = 8;
 
-  for(i = get_frame_count() % 4; i < num_bullets; i+=4) {
+  for(i = get_frame_count() % 4; i < get_num_bullets(); i+=4) {
     if (health == 0 || current_enemy_formation == MAX_FORMATIONS) continue;
 
-    temp_collidable_b.x = INT(bullets_x[i]);
-    temp_collidable_b.y = INT(bullets_y[i]);
+    temp_collidable_b.x = bullets_x[i];
+    temp_collidable_b.y = bullets_y[i];
     if (IS_PLAYER_BULLET(i)) {
       if (temp_collidable_b.y > 0x64) continue;
       for(temp = 0; temp < num_enemies; ++temp) {
@@ -350,7 +334,8 @@ void compute_collisions (void) {
 
         if (check_collision(&temp_collidable_a, &temp_collidable_b)) {
           sfx_play(SFX_HIT, 0);
-          delete_bullet();
+          delete_bullet(i);
+          --i;
           --enemy_hp[temp];
           if (enemy_hp[temp] == 0) {
             delete_enemy();
@@ -361,7 +346,8 @@ void compute_collisions (void) {
     } else {
       if (check_collision(&player_collidable, &temp_collidable_b)) {
         sfx_play(SFX_HIT, 0);
-        delete_bullet();
+        delete_bullet(i);
+        --i;
         if (health > 0) {
           --health;
           update_health();
@@ -397,7 +383,8 @@ void start_game (void) {
 
   init_ship();
 
-  num_bullets = 0;
+  reset_bullets();
+
   enemy_row_movement = 0;
 }
 
@@ -416,7 +403,7 @@ void go_to_title (void) {
 }
 
 void player_shoot (void) {
-  if (player_shoot_cd > 0 || num_bullets >= MAX_BULLETS) return;
+  if (player_shoot_cd > 0 || get_num_bullets() >= MAX_BULLETS) return;
 
   switch(current_ship_mode) {
   case Default:
@@ -424,40 +411,40 @@ void player_shoot (void) {
     ++player_bullet_count;
     player_shoot_cd = 8;
     player_bullets_cd = 60;
-    bullets_x[num_bullets] = player_x - FP(4, 0);
-    bullets_y[num_bullets] = player_y - FP(8, 0);
-    bullets_type[num_bullets] = PlayerBullet;
-    bullets_delta_x[num_bullets] = FP(0, 0);
-    bullets_delta_y[num_bullets] = -FP(2, 128);
-    num_bullets++;
+    bullets_x[get_num_bullets()] = player_x - FP(4, 0);
+    bullets_y[get_num_bullets()] = player_y - FP(8, 0);
+    bullets_type[get_num_bullets()] = PlayerBullet;
+    bullets_delta_x[get_num_bullets()] = FP(0, 0);
+    bullets_delta_y[get_num_bullets()] = -FP(2, 128);
+    inc_bullets();
     break;
   case Tree:
     if (player_bullet_count >= 1) return;
     ++player_bullet_count;
     player_shoot_cd = 12;
     player_bullets_cd = 45;
-    bullets_x[num_bullets] = player_x - FP(4, 0);
-    bullets_y[num_bullets] = player_y - FP(8, 0);
-    bullets_type[num_bullets] = PlayerApple;
+    bullets_x[get_num_bullets()] = player_x - FP(4, 0);
+    bullets_y[get_num_bullets()] = player_y - FP(8, 0);
+    bullets_type[get_num_bullets()] = PlayerApple;
     if (player_speed >= 0) {
-      bullets_delta_x[num_bullets] = FP(0, 32);
+      bullets_delta_x[get_num_bullets()] = FP(0, 32);
     } else {
-      bullets_delta_x[num_bullets] = -FP(0, 32);
+      bullets_delta_x[get_num_bullets()] = -FP(0, 32);
     }
-    bullets_delta_y[num_bullets] = FP(2, 0);
-    num_bullets++;
+    bullets_delta_y[get_num_bullets()] = FP(2, 0);
+    inc_bullets();
     break;
   case Tetro:
     if (player_bullet_count >= 4) return;
     ++player_bullet_count;
     player_shoot_cd = 8;
     player_bullets_cd = 75;
-    bullets_x[num_bullets] = player_x - FP(4, 0);
-    bullets_y[num_bullets] = player_y - FP(8, 0);
-    bullets_type[num_bullets] = PlayerBlock;
-    bullets_delta_x[num_bullets] = FP(0, 0);
-    bullets_delta_y[num_bullets] = -FP(1, 0);
-    num_bullets++;
+    bullets_x[get_num_bullets()] = player_x - FP(4, 0);
+    bullets_y[get_num_bullets()] = player_y - FP(8, 0);
+    bullets_type[get_num_bullets()] = PlayerBlock;
+    bullets_delta_x[get_num_bullets()] = FP(0, 0);
+    bullets_delta_y[get_num_bullets()] = -FP(1, 0);
+    inc_bullets();
     break;
   }
   sfx_play(SFX_PEW, 0);
@@ -465,7 +452,7 @@ void player_shoot (void) {
 }
 
 void enemy_shoot (void) {
-  if (enemy_shoot_cd[temp] > 0 || num_bullets >= MAX_BULLETS || enemy_row_movement > 0) return;
+  if (enemy_shoot_cd[temp] > 0 || get_num_bullets() >= MAX_BULLETS || enemy_row_movement > 0) return;
   if (enemy_bullet_count[temp] == 0 && rand8() > 32) return;
 
   temp_int_x = FP(enemy_x[temp] + enemy_width[temp] / 2 - 4, 0);
@@ -477,56 +464,56 @@ void enemy_shoot (void) {
     ++enemy_bullet_count[temp];
     enemy_shoot_cd[temp] = 12;
     enemy_bullets_cd[temp] = 90;
-    bullets_x[num_bullets] = temp_int_x;
-    bullets_y[num_bullets] = temp_int_y + FP(8, 0);
-    bullets_type[num_bullets] = EnemyBullet;
-    bullets_delta_x[num_bullets] = FP(0, 0);
-    bullets_delta_y[num_bullets] = FP(2, 0);
-    num_bullets++;
-    if (num_bullets >= MAX_BULLETS) break;
+    bullets_x[get_num_bullets()] = temp_int_x;
+    bullets_y[get_num_bullets()] = temp_int_y + FP(8, 0);
+    bullets_type[get_num_bullets()] = EnemyBullet;
+    bullets_delta_x[get_num_bullets()] = FP(0, 0);
+    bullets_delta_y[get_num_bullets()] = FP(2, 0);
+    inc_bullets();
+    if (get_num_bullets() >= MAX_BULLETS) break;
 
-    bullets_x[num_bullets] = temp_int_x + FP(8, 0);
-    bullets_y[num_bullets] = temp_int_y + FP(8, 0);
-    bullets_type[num_bullets] = EnemyBullet;
-    bullets_delta_x[num_bullets] = FP(0, 96);
-    bullets_delta_y[num_bullets] = FP(2, 0);
-    num_bullets++;
-    if (num_bullets >= MAX_BULLETS) break;
+    bullets_x[get_num_bullets()] = temp_int_x + FP(8, 0);
+    bullets_y[get_num_bullets()] = temp_int_y + FP(8, 0);
+    bullets_type[get_num_bullets()] = EnemyBullet;
+    bullets_delta_x[get_num_bullets()] = FP(0, 96);
+    bullets_delta_y[get_num_bullets()] = FP(2, 0);
+    inc_bullets();
+    if (get_num_bullets() >= MAX_BULLETS) break;
 
-    bullets_x[num_bullets] = temp_int_x - FP(8, 0);
-    bullets_y[num_bullets] = temp_int_y + FP(8, 0);
-    bullets_type[num_bullets] = EnemyBullet;
-    bullets_delta_x[num_bullets] = -FP(0, 96);
-    bullets_delta_y[num_bullets] = FP(2, 0);
-    num_bullets++;
+    bullets_x[get_num_bullets()] = temp_int_x - FP(8, 0);
+    bullets_y[get_num_bullets()] = temp_int_y + FP(8, 0);
+    bullets_type[get_num_bullets()] = EnemyBullet;
+    bullets_delta_x[get_num_bullets()] = -FP(0, 96);
+    bullets_delta_y[get_num_bullets()] = FP(2, 0);
+    inc_bullets();
     break;
   case Targeter:
     if (enemy_bullet_count[temp] >= 3) return;
     ++enemy_bullet_count[temp];
     enemy_shoot_cd[temp] = 15;
     enemy_bullets_cd[temp] = 90;
-    bullets_x[num_bullets] = temp_int_x - FP(0x10, 0);
-    bullets_y[num_bullets] = temp_int_y + FP(8, 0);
-    bullets_type[num_bullets] = EnemyBullet;
-    if (player_x >= bullets_x[num_bullets]) {
-      bullets_delta_x[num_bullets] = FP(0, 64);
+    bullets_x[get_num_bullets()] = temp_int_x - FP(0x10, 0);
+    bullets_y[get_num_bullets()] = temp_int_y + FP(8, 0);
+    bullets_type[get_num_bullets()] = EnemyBullet;
+    if (player_x >= bullets_x[get_num_bullets()]) {
+      bullets_delta_x[get_num_bullets()] = FP(0, 64);
     } else {
-      bullets_delta_x[num_bullets] = -FP(0, 128);
+      bullets_delta_x[get_num_bullets()] = -FP(0, 128);
     }
-    bullets_delta_y[num_bullets] = FP(2, 0);
-    num_bullets++;
-    if (num_bullets >= MAX_BULLETS) break;
+    bullets_delta_y[get_num_bullets()] = FP(2, 0);
+    inc_bullets();
+    if (get_num_bullets() >= MAX_BULLETS) break;
 
-    bullets_x[num_bullets] = temp_int_x + FP(0x10, 0);
-    bullets_y[num_bullets] = temp_int_y + FP(8, 0);
-    bullets_type[num_bullets] = EnemyBullet;
-    if (player_x >= bullets_x[num_bullets]) {
-      bullets_delta_x[num_bullets] = FP(0, 128);
+    bullets_x[get_num_bullets()] = temp_int_x + FP(0x10, 0);
+    bullets_y[get_num_bullets()] = temp_int_y + FP(8, 0);
+    bullets_type[get_num_bullets()] = EnemyBullet;
+    if (player_x >= bullets_x[get_num_bullets()]) {
+      bullets_delta_x[get_num_bullets()] = FP(0, 128);
     } else {
-      bullets_delta_x[num_bullets] = -FP(0, 64);
+      bullets_delta_x[get_num_bullets()] = -FP(0, 64);
     }
-    bullets_delta_y[num_bullets] = FP(2, 0);
-    num_bullets++;
+    bullets_delta_y[get_num_bullets()] = FP(2, 0);
+    inc_bullets();
     break;
   }
   return;
@@ -787,7 +774,7 @@ void draw_sprites (void) {
     oam_meta_spr(temp_x, temp_y, game_over_sprite);
   }
 
-  for(i = get_frame_count() % 2; i < num_bullets; i += 2) {
+  for(i = get_frame_count() % 2; i < get_num_bullets(); i += 2) {
     switch(bullets_type[i]) {
     case PlayerBullet:
       oam_spr(INT(bullets_x[i]), INT(bullets_y[i]), 0x00, 0x01);

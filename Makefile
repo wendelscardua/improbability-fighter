@@ -17,14 +17,14 @@ debug: LD65_FLAGS += --dbgfile ${PROJECT}.dbg
 debug: CA65_FLAGS += -g -DDEBUG=1
 debug: ${TARGET}
 
-${TARGET}: src/main.o src/crt0.o src/lib/unrle.o \
+${TARGET}: src/main.o src/crt0.o src/bullets.o src/lib/unrle.o \
            assets/nametables.o
 	ld65 $^ -C MMC3.cfg nes.lib -m map.txt -o ${TARGET} ${LD65_FLAGS}
 
 %.o: %.s
 	ca65 $< ${CA65_FLAGS}
 
-src/main.s: src/main.c assets/nametables.h
+src/main.s: src/main.c assets/nametables.h src/bullets.h src/sprites.h
 	cc65 -Oirs src/main.c --add-source ${CA65_FLAGS}
 
 src/crt0.o: src/crt0.s src/mmc3/mmc3_code.asm src/lib/neslib.s src/lib/nesdoug.s assets/*.chr \
