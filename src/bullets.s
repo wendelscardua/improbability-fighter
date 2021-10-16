@@ -1,5 +1,12 @@
 MAX_BULLETS = 32
 
+.enum bullet_type
+  PlayerBullet
+  EnemyBullet
+  PlayerApple
+  PlayerBlock
+.endenum
+
 .segment "ZEROPAGE"
 
 num_bullets: .res 1
@@ -68,5 +75,87 @@ _bullets_delta_sy: .res MAX_BULLETS
 .proc _reset_bullets
   LDA #$00
   STA num_bullets
+  RTS
+.endproc
+
+.export _update_bullets
+.proc _update_bullets
+  LDX #0
+loop:
+  CPX num_bullets
+  BEQ exit_loop
+  ; increment fixed-point coordinates
+  CLC
+  LDA _bullets_sx, X
+  ADC _bullets_delta_sx, X
+  STA _bullets_sx, X
+
+  LDA _bullets_x, X
+  ADC _bullets_delta_x, X
+  STA _bullets_x, X
+
+  CLC
+  LDA _bullets_sy, X
+  ADC _bullets_delta_sy, X
+  STA _bullets_sy, X
+
+  LDA _bullets_y, X
+  ADC _bullets_delta_y, X
+  STA _bullets_y, X
+
+  ; special case for apples
+  LDA _bullets_type, X
+  CMP #bullet_type::PlayerApple
+  BNE no_apple
+
+  ; signed compare if delta y > -2
+  LDA _bullets_delta_y, X
+  SEC       ; prepare carry for SBC
+  SBC #($100-$2)   ; A-NUM
+  BVC :+ ; if V is 0, N eor V = N, otherwise N eor V = N eor 1
+  EOR #$80  ; A = A eor $80, and N = N eor 1
+:
+  BMI no_apple
+
+  ; delta speed - $00.10
+  SEC
+  LDA _bullets_delta_sy, X
+  SBC #$10
+  STA _bullets_delta_sy, X
+
+  LDA _bullets_delta_y, X
+  SBC #$00
+  STA _bullets_delta_y, X
+no_apple:
+
+  ; delete bullet if out of bounds
+  LDA _bullets_x, X
+  CMP #$08
+  BCC out_of_bounds
+  CMP #$f8
+  BCS out_of_bounds
+
+  LDA _bullets_y, X
+  CMP #$08
+  BCC out_of_bounds
+  CMP #$e0
+  BCS out_of_bounds
+
+  JMP next
+out_of_bounds:
+  TXA
+  JSR _delete_bullet
+  JMP loop
+next:
+  INX
+  JMP loop
+exit_loop:
+  .ifdef DEBUG
+    .import _gray_line
+    JSR _gray_line
+  .endif
+
+  LDX #$00
+  LDA #$00
   RTS
 .endproc

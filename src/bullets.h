@@ -21,5 +21,6 @@ extern unsigned char bullets_delta_sy[MAX_BULLETS];
 
 void delete_bullet (unsigned char index);
 unsigned char get_num_bullets (void);
-void reset_bullets (void);
 void inc_bullets (void);
+void reset_bullets (void);
+void update_bullets (void);

@@ -285,35 +285,6 @@ void delete_enemy (void) {
   }
 }
 
-void update_bullets (void) {
-  for(i = 0; i < get_num_bullets(); ++i) {
-    temp_int = FP(bullets_x[i], bullets_sx[i]) + FP(bullets_delta_x[i], bullets_delta_sx[i]);
-    bullets_x[i] = INT(temp_int);
-    bullets_sx[i] = FRAC(temp_int);
-    temp_int = FP(bullets_y[i], bullets_sy[i]) + FP(bullets_delta_y[i], bullets_delta_sy[i]);
-    bullets_y[i] = INT(temp_int);
-    bullets_sy[i] = FRAC(temp_int);
-    if (bullets_type[i] == PlayerApple && FP(bullets_delta_y[i], bullets_delta_sy[i]) > -FP(2, 0)) {
-      temp_int = FP(bullets_delta_y[i], bullets_delta_sy[i]) - FP(0, 16);
-      bullets_delta_y[i] = INT(temp_int);
-      bullets_delta_sy[i] = FRAC(temp_int);
-    }
-    if (FP(bullets_x[i], bullets_sx[i]) < FP(8, 0) ||
-        FP(bullets_x[i], bullets_sx[i]) > FP(247, 0) ||
-        FP(bullets_y[i], bullets_sy[i]) < FP(8, 0) ||
-        FP(bullets_y[i], bullets_sy[i]) > FP(240, 0)) {
-      // delete bullet
-      delete_bullet(i);
-      --i;
-      continue;
-    }
-  }
-
-#ifdef DEBUG
-  gray_line();
-#endif
-}
-
 void compute_collisions (void) {
   // XXX: hardcoded bullet size
   temp_collidable_b.width = 4;
