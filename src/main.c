@@ -26,8 +26,8 @@
 #define SPRITE_0 4
 #define SPRITE_1 6
 
-#define FP(integer,fraction) (((integer)<<4)|((fraction)>>4))
-#define INT(unsigned_fixed_point) ((unsigned_fixed_point>>4)&0xff)
+#define FP(integer,fraction) (((integer)<<8)|((fraction)>>0))
+#define INT(unsigned_fixed_point) ((unsigned_fixed_point>>8)&0xff)
 
 #define PLAYER_SPEED FP(1, 128)
 #define TETRO_SPEED FP(8, 128)
@@ -114,8 +114,8 @@ unsigned char double_buffer[32];
 // extra RAM at $6000-$7fff
 
 unsigned int wram_start;
-int bullets_x[MAX_BULLETS];
-int bullets_y[MAX_BULLETS];
+unsigned int bullets_x[MAX_BULLETS];
+unsigned int bullets_y[MAX_BULLETS];
 bullet_type bullets_type[MAX_BULLETS];
 int bullets_delta_x[MAX_BULLETS];
 int bullets_delta_y[MAX_BULLETS];
@@ -314,8 +314,10 @@ void update_bullets (void) {
     if (bullets_type[i] == PlayerApple && bullets_delta_y[i] > -FP(2, 0)) {
       bullets_delta_y[i] -= FP(0, 16);
     }
-    if (bullets_x[i] < FP(0, 0) || bullets_x[i] > FP(255, 0) ||
-        bullets_y[i] < FP(0, 0) || bullets_y[i] > FP(240, 0)) {
+    if (bullets_x[i] < FP(8, 0) ||
+        bullets_x[i] > FP(247, 0) ||
+        bullets_y[i] < FP(8, 0) ||
+        bullets_y[i] > FP(240, 0)) {
       // delete bullet
       delete_bullet();
       continue;
@@ -731,6 +733,10 @@ void main (void) {
     double_buffer[double_buffer_index++] = 0xff; // end of data
 
     draw_sprites();
+
+#ifdef DEBUG
+    gray_line();
+#endif
 
     // wait till the irq system is done before changing it
     // this could waste a lot of CPU time, so we do it last
