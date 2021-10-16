@@ -78,6 +78,49 @@ _bullets_delta_sy: .res MAX_BULLETS
   RTS
 .endproc
 
+.export _set_bullet_x
+.proc _set_bullet_x
+  LDY num_bullets
+  STA _bullets_sx, Y
+  TXA
+  STA _bullets_x, Y
+  RTS
+.endproc
+
+.export _set_bullet_y
+.proc _set_bullet_y
+  LDY num_bullets
+  STA _bullets_sy, Y
+  TXA
+  STA _bullets_y, Y
+  RTS
+.endproc
+
+.export _set_bullet_delta_x
+.proc _set_bullet_delta_x
+  LDY num_bullets
+  STA _bullets_delta_sx, Y
+  TXA
+  STA _bullets_delta_x, Y
+  RTS
+.endproc
+
+.export _set_bullet_delta_y
+.proc _set_bullet_delta_y
+  LDY num_bullets
+  STA _bullets_delta_sy, Y
+  TXA
+  STA _bullets_delta_y, Y
+  RTS
+.endproc
+
+.export _set_bullet_type
+.proc _set_bullet_type
+  LDY num_bullets
+  STA _bullets_type, Y
+  RTS
+.endproc
+
 .export _update_bullets
 .proc _update_bullets
   LDX #0
