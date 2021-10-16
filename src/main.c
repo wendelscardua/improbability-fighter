@@ -32,7 +32,7 @@
 #define PLAYER_SPEED FP(1, 128)
 #define TETRO_SPEED FP(8, 128)
 
-#define MAX_BULLETS 64
+#define MAX_BULLETS 32
 #define MAX_ENEMIES 4
 #define MAX_FORMATIONS 2
 
@@ -110,10 +110,6 @@ unsigned char enemy_row_movement;
 char irq_array[32];
 unsigned char double_buffer[32];
 
-#pragma bss-name(push, "XRAM")
-// extra RAM at $6000-$7fff
-
-unsigned int wram_start;
 unsigned int bullets_x[MAX_BULLETS];
 unsigned int bullets_y[MAX_BULLETS];
 bullet_type bullets_type[MAX_BULLETS];
@@ -130,6 +126,11 @@ unsigned char enemy_y[MAX_ENEMIES];
 unsigned char enemy_width[MAX_ENEMIES];
 unsigned char enemy_height[MAX_ENEMIES];
 unsigned char enemy_pattern[MAX_ENEMIES];
+
+#pragma bss-name(push, "XRAM")
+// extra RAM at $6000-$7fff
+
+unsigned int wram_start;
 
 #pragma bss-name(pop)
 
@@ -324,6 +325,12 @@ void update_bullets (void) {
     }
   }
 
+#ifdef DEBUG
+  gray_line();
+#endif
+}
+
+void compute_collisions (void) {
   // XXX: hardcoded bullet size
   temp_collidable_b.width = 4;
   temp_collidable_b.height = 8;
@@ -613,6 +620,7 @@ void main (void) {
         }
       }
       update_bullets();
+      compute_collisions();
 
       if (player_shoot_cd > 0) --player_shoot_cd;
       if (player_bullets_cd > 0) {
