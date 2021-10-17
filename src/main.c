@@ -410,8 +410,8 @@ void player_shoot (void) {
     ++player_bullet_count;
     player_shoot_cd = 8;
     player_bullets_cd = 75;
-    set_bullet_x(player_x - FP(4, 0));
-    set_bullet_y(player_y - FP(8, 0));
+    set_bullet_x(player_x - FP(8, 0));
+    set_bullet_y(player_y - FP(12, 0));
     set_bullet_type(PlayerBlock);
     set_bullet_delta_x(FP(0, 0));
     set_bullet_delta_y(-FP(1, 0));
@@ -677,6 +677,9 @@ void main (void) {
         for(i = 0; i < num_enemies; i++) {
           enemy_hp[i] = 1;
         }
+      }
+      if (get_pad_new(0) & PAD_SELECT) {
+        chaos = 9;
       }
 #endif
 
