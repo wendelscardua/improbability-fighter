@@ -360,6 +360,7 @@ void start_game (void) {
 }
 
 void go_to_title (void) {
+  current_game_state = Title;
   pal_fade_to(4, 0);
   ppu_off(); // screen off
   // draw some things
@@ -367,10 +368,12 @@ void go_to_title (void) {
   unrle(title_nametable);
   music_play(0);
 
+  set_scroll_x(0);
+  set_scroll_y(0);
+
   draw_sprites();
   ppu_on_all(); //	turn on screen
   pal_fade_to(0, 4);
-  current_game_state = Title;
 }
 
 void player_shoot (void) {
@@ -529,8 +532,6 @@ void main (void) {
 
     switch (current_game_state) {
     case Title:
-      set_scroll_x(0);
-      set_scroll_y(0);
       if (get_pad_new(0) & (PAD_START | PAD_A)) {
         sfx_play(SFX_START, 0);
         start_game();
@@ -538,6 +539,10 @@ void main (void) {
       break;
     case GamePlay:
       double_buffer[double_buffer_index++] = 0xc8;
+      double_buffer[double_buffer_index++] = 0xfe;
+      double_buffer[double_buffer_index++] = 0x01;
+      double_buffer[double_buffer_index++] = 0xf1;
+      double_buffer[double_buffer_index++] = 0x08;
       double_buffer[double_buffer_index++] = 0xf6;
       double_buffer[double_buffer_index++] = 0x20;
       double_buffer[double_buffer_index++] = 0x00;
@@ -604,9 +609,9 @@ void main (void) {
       set_scroll_x(enemy_area_x);
       set_scroll_y(enemy_area_y);
 
-#define X_MARGIN 0x10
+#define X_MARGIN 0x18
 #define TOP_MARGIN 0x60
-#define BOTTOM_MARGIN 0x20
+#define BOTTOM_MARGIN 0x28
       if (current_ship_mode == Tetro) {
         if (get_pad_new(0) & (PAD_LEFT)) {
           player_speed = -1;
