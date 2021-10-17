@@ -293,7 +293,7 @@ void compute_collisions (void) {
   for(i = get_frame_count() % 4; i < get_num_bullets(); i+=4) {
     if (health == 0 || current_enemy_formation == MAX_FORMATIONS) continue;
 
-    temp_collidable_b.x = bullets_x[i];
+    temp_collidable_b.x = bullets_x[i] + 2;
     temp_collidable_b.y = bullets_y[i];
     if (IS_PLAYER_BULLET(i)) {
       if (temp_collidable_b.y > 0x64) continue;
@@ -745,7 +745,7 @@ void draw_sprites (void) {
   oam_clear();
   if (current_game_state != GamePlay) return;
 
-  draw_ship();
-
   draw_bullets();
+
+  draw_ship();
 }
