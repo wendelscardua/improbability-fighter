@@ -181,6 +181,8 @@ unsigned char load_enemy_row (void) {
       pal_fade_to(4, 0);
       ppu_off(); // screen off
       load_enemy_formation(current_enemy_formation);
+      reset_bullets();
+      oam_clear();
       ppu_on_all();
       update_health();
       update_chaos();
@@ -218,6 +220,7 @@ void load_enemy_formation (unsigned char index) {
   enemy_area_y = 0xa0;
   set_scroll_x(enemy_area_x);
   set_scroll_y(enemy_area_y);
+  reset_bullets();
   load_enemy_row();
 }
 
@@ -353,8 +356,6 @@ void start_game (void) {
   current_game_state = GamePlay;
 
   init_ship();
-
-  reset_bullets();
 
   enemy_row_movement = 0;
 }
