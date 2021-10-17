@@ -257,12 +257,5 @@ next:
   INX
   JMP loop
 exit_loop:
-  .ifdef DEBUG
-    .import _gray_line
-    JSR _gray_line
-  .endif
-
-  LDX #$00
-  LDA #$00
   RTS
 .endproc

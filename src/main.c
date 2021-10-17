@@ -689,10 +689,6 @@ void main (void) {
       break;
     }
 
-#ifdef DEBUG
-    gray_line();
-#endif
-
     // load the irq array with values it parse
     // ! CHANGED it, double buffered so we aren't editing the same
     // array that the irq system is reading from
