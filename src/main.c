@@ -82,7 +82,8 @@ enum ship_mode {
                 None
 } current_ship_mode, old_ship_mode;
 
-unsigned char enemy_area_x, enemy_area_y;
+unsigned char enemy_area_x;
+unsigned int enemy_area_y;
 unsigned int player_x, player_y;
 signed char player_speed;
 unsigned char player_shoot_cd, player_bullets_cd, player_bullet_count;
