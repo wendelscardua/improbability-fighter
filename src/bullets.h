@@ -20,6 +20,7 @@ extern unsigned char bullets_delta_y[MAX_BULLETS];
 extern unsigned char bullets_delta_sy[MAX_BULLETS];
 
 void __fastcall__ delete_bullet (unsigned char index);
+void __fastcall__ draw_bullets (void);
 unsigned char __fastcall__ get_num_bullets (void);
 void __fastcall__ inc_bullets (void);
 void __fastcall__ reset_bullets (void);

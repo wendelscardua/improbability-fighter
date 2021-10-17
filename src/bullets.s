@@ -1,4 +1,5 @@
 MAX_BULLETS = 32
+OAM_BUF = $0200
 
 .enum bullet_type
   PlayerBullet
@@ -29,6 +30,8 @@ _bullets_delta_sy: .res MAX_BULLETS
 
 .segment "CODE"
 
+.import _oam_get, _oam_set
+
 .export _delete_bullet
 .proc _delete_bullet
   TAX
@@ -55,6 +58,67 @@ _bullets_delta_sy: .res MAX_BULLETS
   STA _bullets_delta_y, X
   LDA _bullets_delta_sy, Y
   STA _bullets_delta_sy, X
+  RTS
+.endproc
+
+.export _draw_bullets
+.proc _draw_bullets
+  JSR _oam_get
+  TAX
+
+  LDY #$00
+loop:
+  CPY num_bullets
+  BEQ exit_loop
+
+  LDA _bullets_x, Y
+  STA OAM_BUF+3, X
+  LDA _bullets_y, Y
+  STA OAM_BUF+0, X
+
+  LDA _bullets_type, Y
+  CMP #bullet_type::PlayerBullet
+  BNE :+
+  LDA #$00
+  STA OAM_BUF+1, X
+  LDA #$01
+  STA OAM_BUF+2, X
+  JMP next
+: CMP #bullet_type::PlayerApple
+  BNE :+
+  LDA #$01
+  STA OAM_BUF+1, X
+  LDA #$02
+  STA OAM_BUF+2, X
+  JMP next
+: CMP #bullet_type::EnemyBullet
+  BNE :+
+  LDA #$00
+  STA OAM_BUF+1, X
+  LDA #$02
+  STA OAM_BUF+2, X
+  JMP next
+: CMP #bullet_type::PlayerBlock
+  BNE :+
+  LDA #$8a
+  STA OAM_BUF+1, X
+  LDA #$03
+  STA OAM_BUF+2, X
+  LDA _bullets_y, Y
+  AND #$f8
+  STA OAM_BUF+0, X
+  JMP next
+:
+
+next:
+  INY
+  .repeat 4
+    INX
+  .endrepeat
+  JMP loop
+exit_loop:
+  TXA
+  JSR _oam_set
   RTS
 .endproc
 
