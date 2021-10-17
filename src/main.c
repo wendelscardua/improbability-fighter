@@ -680,12 +680,20 @@ void main (void) {
       }
 #ifdef DEBUG
       if (get_pad_new(0) & PAD_B) {
-        for(i = 0; i < num_enemies; i++) {
-          enemy_hp[i] = 1;
+        if (pad_state(0) & PAD_A) {
+          for(i = 0; i < num_enemies; i++) {
+            enemy_hp[i] = 1;
+          }
         }
-      }
-      if (get_pad_new(0) & PAD_SELECT) {
-        chaos = 9;
+        if (pad_state(0) & PAD_UP) {
+          enemy_area_y-=8;
+        }
+        if (pad_state(0) & PAD_DOWN) {
+          enemy_area_y+=8;
+        }
+        if (pad_state(0) & PAD_SELECT) {
+          chaos = 9;
+        }
       }
 #endif
 
