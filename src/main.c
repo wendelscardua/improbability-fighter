@@ -551,7 +551,7 @@ void main (void) {
 
       if (enemy_row_movement > 0) {
         --enemy_row_movement;
-        --enemy_area_y;
+        enemy_area_y = sub_scroll_y(1, enemy_area_y);
       }
 
       if (--chaos_counter == 0) {
@@ -687,10 +687,12 @@ void main (void) {
           }
         }
         if (pad_state(0) & PAD_UP) {
-          enemy_area_y-=8;
+          enemy_area_y = sub_scroll_y(8, enemy_area_y);
+          enemy_area_y &= 0x1ff;
         }
         if (pad_state(0) & PAD_DOWN) {
-          enemy_area_y+=8;
+          enemy_area_y = add_scroll_y(8, enemy_area_y);
+          enemy_area_y &= 0x1ff;
         }
         if (pad_state(0) & PAD_SELECT) {
           chaos = 9;
