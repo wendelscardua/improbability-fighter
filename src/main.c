@@ -31,6 +31,8 @@
 #define INT(unsigned_fixed_point) ((unsigned_fixed_point>>8)&0xff)
 #define FRAC(unsigned_fixed_point) ((unsigned_fixed_point)&0xff)
 
+#define HUD_HEIGHT 0x28
+
 #define PLAYER_SPEED FP(1, 128)
 #define TETRO_SPEED FP(8, 128)
 
@@ -68,6 +70,7 @@ unsigned char double_buffer_index;
 
 unsigned char temp, i, unseeded, temp_x, temp_y;
 unsigned int temp_int, temp_int_x, temp_int_y;
+unsigned char hud_scanline, hud_skip_scanline;
 
 enum game_state {
                  Title,
@@ -540,15 +543,6 @@ void main (void) {
       }
       break;
     case GamePlay:
-      double_buffer[double_buffer_index++] = 0xc8;
-      double_buffer[double_buffer_index++] = 0xfe;
-      double_buffer[double_buffer_index++] = 0x01;
-      double_buffer[double_buffer_index++] = 0xf1;
-      double_buffer[double_buffer_index++] = 0x08;
-      double_buffer[double_buffer_index++] = 0xf6;
-      double_buffer[double_buffer_index++] = 0x20;
-      double_buffer[double_buffer_index++] = 0x00;
-
       if (enemy_row_movement > 0) {
         --enemy_row_movement;
         enemy_area_y = sub_scroll_y(1, enemy_area_y);
@@ -607,9 +601,6 @@ void main (void) {
         }
         enemy_shoot();
       }
-
-      set_scroll_x(enemy_area_x);
-      set_scroll_y(enemy_area_y);
 
 #define X_MARGIN 0x18
 #define TOP_MARGIN 0x60
@@ -700,11 +691,49 @@ void main (void) {
       }
 #endif
 
-      break;
-    case GameEnd:
-      if (get_pad_new(0) & PAD_START) {
-        sfx_play(SFX_SELECT, 0);
-        go_to_title();
+
+      hud_scanline = 0xf0 - HUD_HEIGHT;
+
+      if (enemy_area_y == 0) {
+        enemy_area_y = HUD_HEIGHT;
+      } else if (enemy_area_y < HUD_HEIGHT) {
+        enemy_area_y = sub_scroll_y(HUD_HEIGHT, enemy_area_y) & 0x1ff;
+      }
+
+      hud_skip_scanline = 0xff;
+
+      if (enemy_area_y > 0x100 + HUD_HEIGHT) {
+        hud_skip_scanline = 0xf0 - (enemy_area_y - 0x100);
+      }
+      // TODO compute skip scanline
+
+      if (hud_skip_scanline != 0xff) {
+        double_buffer[double_buffer_index++] = hud_skip_scanline;
+        double_buffer[double_buffer_index++] = 0xf6;
+        temp_int = 0x2000 + 0x4 * HUD_HEIGHT;
+        double_buffer[double_buffer_index++] = (temp_int>>8);
+        double_buffer[double_buffer_index++] = temp_int;
+        hud_scanline -= hud_skip_scanline;
+      }
+
+      set_scroll_x(enemy_area_x);
+      set_scroll_y(enemy_area_y);
+
+      // scroll to hud at the end
+      double_buffer[double_buffer_index++] = hud_scanline;
+      double_buffer[double_buffer_index++] = 0xfe;
+      double_buffer[double_buffer_index++] = 0x01;
+double_buffer[double_buffer_index++] = 0xf1;
+          double_buffer[double_buffer_index++] = 0x08;
+          double_buffer[double_buffer_index++] = 0xf6;
+          double_buffer[double_buffer_index++] = 0x20;
+          double_buffer[double_buffer_index++] = 0x00;
+
+          break;
+          case GameEnd:
+          if (get_pad_new(0) & PAD_START) {
+            sfx_play(SFX_SELECT, 0);
+            go_to_title();
       }
       break;
     }
