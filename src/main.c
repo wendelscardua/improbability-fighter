@@ -62,11 +62,11 @@ typedef struct {
 } enemy;
 
 // GLOBAL VARIABLES
+unsigned char double_buffer_index;
 unsigned char arg1;
 unsigned char arg2;
 unsigned char pad1;
 unsigned char pad1_new;
-unsigned char double_buffer_index;
 
 unsigned char temp, i, unseeded, temp_x, temp_y;
 unsigned int temp_int, temp_int_x, temp_int_y;
@@ -691,6 +691,7 @@ void main (void) {
       }
 #endif
 
+      //enemy_area_y = 0x10;
 
       hud_scanline = 0xf0 - HUD_HEIGHT;
 
@@ -708,12 +709,14 @@ void main (void) {
       // TODO compute skip scanline
 
       if (hud_skip_scanline != 0xff) {
-        double_buffer[double_buffer_index++] = hud_skip_scanline;
+        double_buffer[double_buffer_index++] = hud_skip_scanline - 1;
+        double_buffer[double_buffer_index++] = 0xf5;
+        double_buffer[double_buffer_index++] = 0x00;
         double_buffer[double_buffer_index++] = 0xf6;
         temp_int = 0x2000 + 0x4 * HUD_HEIGHT;
         double_buffer[double_buffer_index++] = (temp_int>>8);
         double_buffer[double_buffer_index++] = temp_int;
-        hud_scanline -= hud_skip_scanline;
+        hud_scanline -= hud_skip_scanline - 1;
       }
 
       set_scroll_x(enemy_area_x);
@@ -721,19 +724,19 @@ void main (void) {
 
       // scroll to hud at the end
       double_buffer[double_buffer_index++] = hud_scanline;
-      double_buffer[double_buffer_index++] = 0xfe;
-      double_buffer[double_buffer_index++] = 0x01;
-double_buffer[double_buffer_index++] = 0xf1;
-          double_buffer[double_buffer_index++] = 0x08;
-          double_buffer[double_buffer_index++] = 0xf6;
-          double_buffer[double_buffer_index++] = 0x20;
-          double_buffer[double_buffer_index++] = 0x00;
+      double_buffer[double_buffer_index++] = 0xf5;
+      double_buffer[double_buffer_index++] = 0x00;
+      double_buffer[double_buffer_index++] = 0xf6;
+      double_buffer[double_buffer_index++] = 0x20;
+      double_buffer[double_buffer_index++] = 0x00;
+      double_buffer[double_buffer_index++] = 0xf1;
+      double_buffer[double_buffer_index++] = 0x08;
 
-          break;
-          case GameEnd:
-          if (get_pad_new(0) & PAD_START) {
-            sfx_play(SFX_SELECT, 0);
-            go_to_title();
+      break;
+    case GameEnd:
+      if (get_pad_new(0) & PAD_START) {
+        sfx_play(SFX_SELECT, 0);
+        go_to_title();
       }
       break;
     }
@@ -746,10 +749,6 @@ double_buffer[double_buffer_index++] = 0xf1;
     double_buffer[double_buffer_index++] = 0xff; // end of data
 
     draw_sprites();
-
-#ifdef DEBUG
-    gray_line();
-#endif
 
     // wait till the irq system is done before changing it
     // this could waste a lot of CPU time, so we do it last
