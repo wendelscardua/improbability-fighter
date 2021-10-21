@@ -151,6 +151,7 @@ nmi:
 	  lda #SOUND_BANK
 	  jsr _set_prg_8000
   .endif
+  cli
 	jsr FamiToneUpdate
 	pla
 	sta BP_BANK_8000 ;restore prg bank
