@@ -187,9 +187,10 @@ unsigned char load_enemy_row (void) {
       load_enemy_formation(current_enemy_formation);
       reset_bullets();
       oam_clear();
-      ppu_on_all();
       update_health();
       update_chaos();
+      flush_vram_update_nmi();
+      ppu_on_all();
       pal_fade_to(0, 4);
       enemy_row_movement = 0;
       return 1;
