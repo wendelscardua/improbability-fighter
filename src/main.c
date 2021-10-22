@@ -671,18 +671,18 @@ void main (void) {
         player_shoot();
       }
 #ifdef DEBUG
-      if (get_pad_new(0) & PAD_B) {
+      if (pad_state(0) & PAD_B) {
         if (pad_state(0) & PAD_A) {
           for(i = 0; i < num_enemies; i++) {
             enemy_hp[i] = 1;
           }
         }
         if (pad_state(0) & PAD_UP) {
-          enemy_area_y = sub_scroll_y(8, enemy_area_y);
+          enemy_area_y = sub_scroll_y(1, enemy_area_y);
           enemy_area_y &= 0x1ff;
         }
         if (pad_state(0) & PAD_DOWN) {
-          enemy_area_y = add_scroll_y(8, enemy_area_y);
+          enemy_area_y = add_scroll_y(1, enemy_area_y);
           enemy_area_y &= 0x1ff;
         }
         if (pad_state(0) & PAD_SELECT) {
