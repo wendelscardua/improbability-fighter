@@ -708,14 +708,15 @@ void main (void) {
       }
       // TODO compute skip scanline
 
-      if (hud_skip_scanline != 0xff) {
+      if (hud_skip_scanline != 0xff && hud_scanline > hud_skip_scanline + 1) {
         double_buffer[double_buffer_index++] = hud_skip_scanline - 1;
         double_buffer[double_buffer_index++] = 0xfd;
         double_buffer[double_buffer_index++] = 0xf6;
         temp_int = 0x2000 + 0x4 * HUD_HEIGHT;
         double_buffer[double_buffer_index++] = (temp_int>>8);
         double_buffer[double_buffer_index++] = temp_int;
-        hud_scanline -= hud_skip_scanline + 1;
+
+        hud_scanline -= (hud_skip_scanline + 1);
       }
 
       set_scroll_x(enemy_area_x);
