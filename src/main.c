@@ -710,22 +710,20 @@ void main (void) {
 
       if (hud_skip_scanline != 0xff) {
         double_buffer[double_buffer_index++] = hud_skip_scanline - 1;
-        double_buffer[double_buffer_index++] = 0xf5;
-        double_buffer[double_buffer_index++] = 0x00;
+        double_buffer[double_buffer_index++] = 0xfd;
         double_buffer[double_buffer_index++] = 0xf6;
         temp_int = 0x2000 + 0x4 * HUD_HEIGHT;
         double_buffer[double_buffer_index++] = (temp_int>>8);
         double_buffer[double_buffer_index++] = temp_int;
-        hud_scanline -= hud_skip_scanline - 1;
+        hud_scanline -= hud_skip_scanline + 1;
       }
 
       set_scroll_x(enemy_area_x);
       set_scroll_y(enemy_area_y);
 
       // scroll to hud at the end
-      double_buffer[double_buffer_index++] = hud_scanline;
-      double_buffer[double_buffer_index++] = 0xf5;
-      double_buffer[double_buffer_index++] = 0x00;
+      double_buffer[double_buffer_index++] = hud_scanline - 1;
+      double_buffer[double_buffer_index++] = 0xfd;
       double_buffer[double_buffer_index++] = 0xf6;
       double_buffer[double_buffer_index++] = 0x20;
       double_buffer[double_buffer_index++] = 0x00;

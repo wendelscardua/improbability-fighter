@@ -274,6 +274,9 @@ sta $2005 ; second value doesn't matter
 jmp @loop
 @4:
 sta $2006 ; f6
+lda #$00
+sta $2005
+sta $2005
 lda (mmc3_ptr), y ; get 2nd value from array
 iny
 sta $2006
