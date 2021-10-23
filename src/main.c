@@ -674,7 +674,7 @@ void main (void) {
 
 #define X_MARGIN 0x18
 #define TOP_MARGIN 0x60
-#define BOTTOM_MARGIN 0x28
+#define BOTTOM_MARGIN 0x38
       if (current_ship_mode == Tetro) {
         if (get_pad_new(0) & (PAD_LEFT)) {
           HIT_CHAOS(8);
