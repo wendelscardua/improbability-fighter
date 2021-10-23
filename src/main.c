@@ -354,6 +354,8 @@ void compute_collisions (void) {
         }
       }
     } else {
+      if (player_blink) continue;
+
       if (check_collision(&player_collidable, &temp_collidable_b)) {
         sfx_play(SFX_HIT, 0);
         delete_bullet(i);
@@ -433,7 +435,10 @@ void go_to_title (void) {
 }
 
 void player_shoot (void) {
-  if (player_shoot_cd > 0 || get_num_bullets() >= MAX_BULLETS || enemy_row_movement > 0) return;
+  if (player_shoot_cd > 0 ||
+      get_num_bullets() >= MAX_BULLETS ||
+      enemy_row_movement > 0 ||
+      player_blink) return;
 
   switch(current_ship_mode) {
   case Default:
