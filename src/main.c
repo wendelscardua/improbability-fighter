@@ -747,7 +747,7 @@ void main (void) {
         }
         break;
       }
-      if (pad_state(0) & (PAD_A)) {
+      if ((pad_state(0) & (PAD_A)) && chaos < 16) {
         player_shoot();
       }
 #ifdef DEBUG
