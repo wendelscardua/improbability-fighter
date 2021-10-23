@@ -92,7 +92,7 @@ unsigned int enemy_rel_y;
 unsigned int player_x, player_y;
 signed char player_speed;
 unsigned char player_shoot_cd, player_bullets_cd, player_bullet_count;
-unsigned char player_blink;
+unsigned char player_blink, tetro_buffer;
 unsigned char health, chaos;
 unsigned char chaos_counter;
 
@@ -257,6 +257,7 @@ void init_ship (void) {
   player_bullets_cd = 0;
   player_speed = 0;
   player_blink = 0;
+  tetro_buffer = 0;
   health = 16;
   chaos = 0;
   chaos_counter = 240;
@@ -651,7 +652,7 @@ void main (void) {
 
       HIT_CHAOS(1);
 
-      if (health > 0 && chaos_counter == 0) {
+      if (health > 0 && current_enemy_formation < MAX_FORMATIONS && chaos_counter == 0) {
         if (chaos < 16) {
           ++chaos;
           update_chaos();
@@ -705,38 +706,80 @@ void main (void) {
         enemy_shoot();
       }
 
+#define TETRO_DELAY 24
+#define TETRO_SUBDELAY 16
 #define X_MARGIN 0x18
 #define TOP_MARGIN 0x60
 #define BOTTOM_MARGIN 0x38
+
       if (current_ship_mode == Tetro) {
+        if (tetro_buffer < TETRO_DELAY && (pad_state(0) & (PAD_UP|PAD_DOWN|PAD_LEFT|PAD_RIGHT))) {
+          tetro_buffer++;
+        }
         if (get_pad_new(0) & (PAD_LEFT)) {
+          tetro_buffer = 0;
           HIT_CHAOS(8);
           player_speed = -1;
           if (player_x > FP(X_MARGIN, 0)) {
             player_x -= TETRO_SPEED;
             player_collidable.x = INT(player_x) - HITBOX_WIDTH/2;
           }
-        }
-        if (get_pad_new(0) & (PAD_RIGHT)) {
+        } else if (get_pad_new(0) & (PAD_RIGHT)) {
+          tetro_buffer = 0;
           HIT_CHAOS(8);
           player_speed = 1;
           if (player_x < FP(0xff - X_MARGIN, 0)) {
             player_x += TETRO_SPEED;
             player_collidable.x = INT(player_x) - HITBOX_WIDTH/2;
           }
-        }
-        if (get_pad_new(0) & (PAD_UP)) {
+        } else if (get_pad_new(0) & (PAD_UP)) {
+          tetro_buffer = 0;
           HIT_CHAOS(8);
           if (player_y > FP(TOP_MARGIN, 0)) {
             player_y -= TETRO_SPEED;
             player_collidable.y = INT(player_y) - HITBOX_HEIGHT/2;
           }
-        }
-        if (get_pad_new(0) & (PAD_DOWN)) {
+        } else if (get_pad_new(0) & (PAD_DOWN)) {
+          tetro_buffer = 0;
           HIT_CHAOS(8);
           if (player_y < FP(0xef - BOTTOM_MARGIN, 0)) {
             player_y += TETRO_SPEED;
             player_collidable.y = INT(player_y) - HITBOX_HEIGHT/2;
+          }
+        } else if (tetro_buffer == TETRO_DELAY) {
+          if (pad_state(0) & (PAD_LEFT)) {
+            tetro_buffer -= TETRO_SUBDELAY;
+            HIT_CHAOS(8);
+            player_speed = -1;
+            if (player_x > FP(X_MARGIN, 0)) {
+              player_x -= TETRO_SPEED;
+              player_collidable.x = INT(player_x) - HITBOX_WIDTH/2;
+            }
+          }
+          if (pad_state(0) & (PAD_RIGHT)) {
+            tetro_buffer -= TETRO_SUBDELAY;
+            HIT_CHAOS(8);
+            player_speed = 1;
+            if (player_x < FP(0xff - X_MARGIN, 0)) {
+              player_x += TETRO_SPEED;
+              player_collidable.x = INT(player_x) - HITBOX_WIDTH/2;
+            }
+          }
+          if (pad_state(0) & (PAD_UP)) {
+            tetro_buffer -= TETRO_SUBDELAY;
+            HIT_CHAOS(8);
+            if (player_y > FP(TOP_MARGIN, 0)) {
+              player_y -= TETRO_SPEED;
+              player_collidable.y = INT(player_y) - HITBOX_HEIGHT/2;
+            }
+          }
+          if (pad_state(0) & (PAD_DOWN)) {
+            tetro_buffer -= TETRO_SUBDELAY;
+            HIT_CHAOS(8);
+            if (player_y < FP(0xef - BOTTOM_MARGIN, 0)) {
+              player_y += TETRO_SPEED;
+              player_collidable.y = INT(player_y) - HITBOX_HEIGHT/2;
+            }
           }
         }
       } else {
