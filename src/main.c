@@ -268,7 +268,7 @@ void load_enemy_formation (unsigned char index) {
 
 void init_ship (void) {
   current_ship_mode = Default;
-  player_x = FP(0x80, 0);
+  player_x = FP(0xc0, 0);
   player_y = FP(0xa0, 0);
   player_shoot_cd = 0;
   player_bullet_count = 0;
