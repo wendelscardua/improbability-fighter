@@ -833,6 +833,12 @@ void main (void) {
             enemy_hp[i] = 1;
           }
         }
+        if (pad_state(0) & PAD_LEFT) {
+          --enemy_area_x;
+        }
+        if (pad_state(0) & PAD_RIGHT) {
+          ++enemy_area_x;
+        }
         if (pad_state(0) & PAD_UP) {
           enemy_area_y = sub_scroll_y(1, enemy_area_y);
           enemy_area_y &= 0x1ff;
