@@ -274,12 +274,16 @@ void update_health (void) {
 }
 
 void update_chaos (void) {
-  if (chaos == 10) {
-    one_vram_buffer(0x11, NTADR_A(26, 2));
-    one_vram_buffer(0x10, NTADR_A(27, 2));
-  } else {
-    one_vram_buffer(0x10, NTADR_A(26, 2));
-    one_vram_buffer(0x10 + chaos, NTADR_A(27, 2));
+  temp_x = 24;
+  for(i = 0; i < 16; i += 4) {
+    if (i > chaos) {
+      temp = 0;
+    } else {
+      temp = chaos - i;
+      if (temp > 4) temp = 4;
+    }
+    one_vram_buffer(0x62 + temp, NTADR_A(temp_x, 2));
+    ++temp_x;
   }
 }
 
@@ -568,7 +572,7 @@ void main (void) {
       }
 
       if (--chaos_counter == 0) {
-        if (chaos < 10) {
+        if (chaos < 16) {
           ++chaos;
           update_chaos();
         } else {
@@ -581,7 +585,7 @@ void main (void) {
             current_ship_mode = rand8() % 4;
           } while (current_ship_mode == old_ship_mode || current_ship_mode >= None) ;
         }
-        if (chaos < 10) {
+        if (chaos < 16) {
           switch(rand8() % 4) {
           case 0:
             chaos_counter = 45;
@@ -707,7 +711,7 @@ void main (void) {
           ++enemy_rel_y;
         }
         if (pad_state(0) & PAD_SELECT) {
-          chaos = 9;
+          chaos = 15;
         }
       }
 #endif
@@ -789,7 +793,7 @@ void draw_ship (void) {
   if (current_enemy_formation == MAX_FORMATIONS) {
     oam_meta_spr(temp_x, temp_y, victory_sprite);
   } else if (health > 0) {
-    if (chaos == 10) {
+    if (chaos == 16) {
       oam_meta_spr(temp_x, temp_y, glitch_sprite);
     } else {
       switch(current_ship_mode) {
