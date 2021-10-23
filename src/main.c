@@ -336,6 +336,15 @@ void delete_enemy (void) {
 
   if (num_enemies == 0) {
     load_enemy_row();
+  } else {
+    max_area_x = 0x00;
+    min_area_x = 0xff;
+    for(i = 0; i < num_enemies; ++i) {
+      if (enemy_x[i] < min_area_x) min_area_x = enemy_x[i];
+      if (enemy_x[i] + enemy_width[i] > max_area_x) max_area_x = enemy_x[i] + enemy_width[i];
+    }
+    min_area_x -= enemy_area_x;
+    max_area_x -= enemy_area_x;
   }
 }
 
@@ -670,13 +679,13 @@ void main (void) {
       }
       if (enemy_row_movement == 0) {
         enemy_area_x += area_x_speed;
-        min_area_x += area_x_speed;
-        max_area_x += area_x_speed;
+        min_area_x -= area_x_speed;
+        max_area_x -= area_x_speed;
         if (min_area_x < 0x08 || max_area_x > 0xf7) {
           area_x_speed = -area_x_speed;
           enemy_area_x += area_x_speed;
-          min_area_x += area_x_speed;
-          max_area_x += area_x_speed;
+          min_area_x -= area_x_speed;
+          max_area_x -= area_x_speed;
         }
       }
 
