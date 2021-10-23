@@ -369,10 +369,22 @@ void compute_collisions (void) {
 
         if (check_collision(&temp_collidable_a, &temp_collidable_b)) {
           sfx_play(SFX_HIT, 0);
+          switch(bullets_type[i]) {
+          case PlayerBullet:
+            temp_x = 1;
+            break;
+          case PlayerApple:
+            temp_x = 4;
+            break;
+          case PlayerBlock:
+            temp_x = 3;
+            break;
+          }
           delete_bullet(i);
           --i;
-          --enemy_hp[temp];
-          if (enemy_hp[temp] == 0) {
+          if (enemy_hp[temp] > temp_x) {
+            enemy_hp[temp] -= temp_x;
+          } else {
             delete_enemy();
             break;
           }
