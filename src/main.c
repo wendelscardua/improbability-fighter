@@ -97,7 +97,7 @@ signed char player_speed;
 unsigned char player_shoot_cd, player_bullets_cd, player_bullet_count;
 unsigned char player_blink, tetro_buffer;
 unsigned char health, chaos;
-unsigned char chaos_counter;
+unsigned char chaos_counter, restart_counter;
 
 collidable temp_collidable_a, temp_collidable_b, player_collidable;
 
@@ -190,6 +190,7 @@ unsigned char load_enemy_row (void) {
   if (temp == 0) {
     ++current_enemy_formation;
     if (current_enemy_formation >= MAX_FORMATIONS) {
+      restart_counter = 240;
       sfx_play(SFX_THE_END, 0);
       return 0;
     } else {
@@ -390,6 +391,7 @@ void compute_collisions (void) {
           update_health();
           if (health == 0) {
             // TODO game over
+            restart_counter = 240;
             break;
           }
         }
@@ -859,7 +861,7 @@ void main (void) {
       hud_stuff();
 
       if (health == 0 || current_enemy_formation == MAX_FORMATIONS) {
-        if (get_pad_new(0) & (PAD_START)) {
+        if ((get_pad_new(0) & (PAD_START)) || --restart_counter == 0) {
           go_to_title();
         }
         break;
