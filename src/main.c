@@ -87,6 +87,7 @@ enum ship_mode {
 
 unsigned char enemy_area_x;
 unsigned int enemy_area_y;
+unsigned int enemy_rel_y;
 unsigned int player_x, player_y;
 signed char player_speed;
 unsigned char player_shoot_cd, player_bullets_cd, player_bullet_count;
@@ -181,6 +182,12 @@ unsigned char load_enemy_row (void) {
       sfx_play(SFX_THE_END, 0);
       return 0;
     } else {
+      while(!is_irq_done() ){ // have we reached the 0xff, end of data
+        // is_irq_done() returns zero if not done
+        // do nothing while we wait
+      }
+      irq_array[0] = 0xff;
+
       clear_vram_buffer();
       pal_fade_to(4, 0);
       ppu_off(); // screen off
@@ -223,6 +230,7 @@ void load_enemy_formation (unsigned char index) {
   unrle(enemy_formation_nametables[index]);
   enemy_area_x = 0;
   enemy_area_y = 0xa0;
+  enemy_rel_y = enemy_area_y;
   set_scroll_x(enemy_area_x);
   set_scroll_y(enemy_area_y);
   reset_bullets();
@@ -307,7 +315,7 @@ void compute_collisions (void) {
       if (temp_collidable_b.y > 0x64) continue;
       for(temp = 0; temp < num_enemies; ++temp) {
         temp_collidable_a.x = enemy_x[temp];
-        temp_collidable_a.y = enemy_y[temp] - enemy_area_y;
+        temp_collidable_a.y = enemy_y[temp] - enemy_rel_y;
         temp_collidable_a.width = enemy_width[temp];
         temp_collidable_a.height = enemy_height[temp];
 
@@ -436,7 +444,7 @@ void enemy_shoot (void) {
   if (enemy_bullet_count[temp] == 0 && rand8() > 32) return;
 
   temp_int_x = FP(enemy_x[temp] + enemy_width[temp] / 2 - 4, 0);
-  temp_int_y = FP(enemy_y[temp] + enemy_height[temp] / 2 - enemy_area_y, 0);
+  temp_int_y = FP(enemy_y[temp] + enemy_height[temp] / 2 - enemy_rel_y, 0);
 
   switch(enemy_pattern[temp]) {
   case Trio:
@@ -547,6 +555,7 @@ void main (void) {
       if (enemy_row_movement > 0 && get_num_bullets() == 0) {
         --enemy_row_movement;
         enemy_area_y = sub_scroll_y(1, enemy_area_y);
+        --enemy_rel_y;
       }
 
       if (--chaos_counter == 0) {
@@ -681,10 +690,12 @@ void main (void) {
         if (pad_state(0) & PAD_UP) {
           enemy_area_y = sub_scroll_y(1, enemy_area_y);
           enemy_area_y &= 0x1ff;
+          --enemy_rel_y;
         }
         if (pad_state(0) & PAD_DOWN) {
           enemy_area_y = add_scroll_y(1, enemy_area_y);
           enemy_area_y &= 0x1ff;
+          ++enemy_rel_y;
         }
         if (pad_state(0) & PAD_SELECT) {
           chaos = 9;
