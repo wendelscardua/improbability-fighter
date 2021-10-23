@@ -88,6 +88,7 @@ enum ship_mode {
 
 unsigned char enemy_area_x;
 unsigned int enemy_area_y;
+unsigned char min_area_x, max_area_x;
 unsigned int enemy_rel_y;
 unsigned int player_x, player_y;
 signed char player_speed;
@@ -211,6 +212,9 @@ unsigned char load_enemy_row (void) {
       return 1;
     }
   }
+  min_area_x = 0xff;
+  max_area_x = 0x00;
+
   num_enemies = 0;
   while(num_enemies < temp) {
     i = formations[current_enemy_formation][enemy_formation_index++];
@@ -219,11 +223,17 @@ unsigned char load_enemy_row (void) {
     enemy_shoot_cd[num_enemies] = 0;
     enemy_bullets_cd[num_enemies] = 0;
     enemy_bullet_count[num_enemies] = 0;
-    enemy_x[num_enemies] = enemies[i].column * 8 + 2;
+    temp_x = enemies[i].column * 8 + 2;
+    enemy_x[num_enemies] = temp_x;
     enemy_y[num_enemies] = enemies[i].row * 8 + 2;
-    enemy_width[num_enemies] = enemies[i].width * 8 - 4;
+    temp_y = enemies[i].width * 8 - 4;
+    enemy_width[num_enemies] = temp_y;
     enemy_height[num_enemies] = enemies[i].height * 8 - 4;
     enemy_pattern[num_enemies] = enemies[i].pattern;
+
+    if (temp_x < min_area_x) min_area_x = temp_x;
+    temp_x += temp_y;
+    if (temp_x > max_area_x) max_area_x = temp_x;
 
     ++num_enemies;
   }
