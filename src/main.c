@@ -186,10 +186,7 @@ unsigned char load_enemy_row (void) {
       sfx_play(SFX_THE_END, 0);
       return 0;
     } else {
-      while(!is_irq_done() ){ // have we reached the 0xff, end of data
-        // is_irq_done() returns zero if not done
-        // do nothing while we wait
-      }
+      while(!is_irq_done() ){}
       irq_array[0] = 0xff;
       double_buffer[0] = 0xff;
 
@@ -403,10 +400,7 @@ void go_to_title (void) {
   current_game_state = Title;
 
   if (irq_array[0] != 0xff) {
-    while(!is_irq_done() ){ // have we reached the 0xff, end of data
-      // is_irq_done() returns zero if not done
-      // do nothing while we wait
-    }
+    while(!is_irq_done() ){}
     irq_array[0] = 0xff;
     double_buffer[0] = 0xff;
   }
@@ -826,10 +820,7 @@ void main (void) {
 
     // wait till the irq system is done before changing it
     // this could waste a lot of CPU time, so we do it last
-    while(!is_irq_done() ){ // have we reached the 0xff, end of data
-      // is_irq_done() returns zero if not done
-      // do nothing while we wait
-    }
+    while(!is_irq_done() ){}
 
     // copy from double_buffer to the irq_array
     // memcpy(void *dst,void *src,unsigned int len);
