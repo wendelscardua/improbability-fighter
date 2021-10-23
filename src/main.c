@@ -250,7 +250,7 @@ void init_ship (void) {
   player_bullet_count = 0;
   player_bullets_cd = 0;
   player_speed = 0;
-  health = 10;
+  health = 16;
   chaos = 0;
   chaos_counter = 240;
   player_collidable.width = HITBOX_WIDTH;
@@ -260,10 +260,17 @@ void init_ship (void) {
 }
 
 void update_health (void) {
-  if (health == 10) return;
-  // XXX: cheating, if updating health it's below 10
-  one_vram_buffer(0x10, NTADR_A(11, 2));
-  one_vram_buffer(0x10 + health, NTADR_A(12, 2));
+  temp_x = 11;
+  for(i = 0; i < 16; i += 4) {
+    if (i > health) {
+      temp = 0;
+    } else {
+      temp = health - i;
+      if (temp > 4) temp = 4;
+    }
+    one_vram_buffer(0x62 + temp, NTADR_A(temp_x, 2));
+    ++temp_x;
+  }
 }
 
 void update_chaos (void) {
