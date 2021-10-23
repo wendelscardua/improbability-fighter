@@ -526,6 +526,47 @@ void enemy_shoot (void) {
   return;
 }
 
+void hud_stuff (void) {
+  hud_scanline = 0xf0 - HUD_HEIGHT;
+
+  if (enemy_area_y == 0) {
+    enemy_area_y = HUD_HEIGHT;
+  } else if (enemy_area_y < HUD_HEIGHT) {
+    enemy_area_y = sub_scroll_y(HUD_HEIGHT, enemy_area_y) & 0x1ff;
+  }
+
+  hud_skip_scanline = 0xff;
+
+  if (enemy_area_y > 0x100 + HUD_HEIGHT) {
+    hud_skip_scanline = 0xf0 - (enemy_area_y - 0x100);
+  }
+  // TODO compute skip scanline
+
+  if (hud_skip_scanline != 0xff && hud_scanline > hud_skip_scanline + 1) {
+    double_buffer[double_buffer_index++] = hud_skip_scanline - 1;
+    double_buffer[double_buffer_index++] = 0xfd;
+    double_buffer[double_buffer_index++] = 0xf6;
+    temp_int = 0x2000 + 0x4 * HUD_HEIGHT;
+    double_buffer[double_buffer_index++] = (temp_int>>8);
+    double_buffer[double_buffer_index++] = temp_int;
+
+    hud_scanline -= (hud_skip_scanline + 1);
+  }
+
+  set_scroll_x(enemy_area_x);
+  set_scroll_y(enemy_area_y);
+
+  // scroll to hud at the end
+  double_buffer[double_buffer_index++] = hud_scanline - 1;
+  double_buffer[double_buffer_index++] = 0xfd;
+  double_buffer[double_buffer_index++] = 0xf6;
+  double_buffer[double_buffer_index++] = 0x20;
+  double_buffer[double_buffer_index++] = 0x00;
+  double_buffer[double_buffer_index++] = 0xf1;
+  double_buffer[double_buffer_index++] = 0x08;
+  return;
+}
+
 void main (void) {
   set_mirroring(MIRROR_HORIZONTAL);
   bank_spr(1);
@@ -698,6 +739,8 @@ void main (void) {
         }
       }
 
+      hud_stuff();
+
       if (health == 0 || current_enemy_formation == MAX_FORMATIONS) {
         if (get_pad_new(0) & (PAD_START)) {
           go_to_title();
@@ -729,46 +772,6 @@ void main (void) {
         }
       }
 #endif
-
-      //enemy_area_y = 0x10;
-
-      hud_scanline = 0xf0 - HUD_HEIGHT;
-
-      if (enemy_area_y == 0) {
-        enemy_area_y = HUD_HEIGHT;
-      } else if (enemy_area_y < HUD_HEIGHT) {
-        enemy_area_y = sub_scroll_y(HUD_HEIGHT, enemy_area_y) & 0x1ff;
-      }
-
-      hud_skip_scanline = 0xff;
-
-      if (enemy_area_y > 0x100 + HUD_HEIGHT) {
-        hud_skip_scanline = 0xf0 - (enemy_area_y - 0x100);
-      }
-      // TODO compute skip scanline
-
-      if (hud_skip_scanline != 0xff && hud_scanline > hud_skip_scanline + 1) {
-        double_buffer[double_buffer_index++] = hud_skip_scanline - 1;
-        double_buffer[double_buffer_index++] = 0xfd;
-        double_buffer[double_buffer_index++] = 0xf6;
-        temp_int = 0x2000 + 0x4 * HUD_HEIGHT;
-        double_buffer[double_buffer_index++] = (temp_int>>8);
-        double_buffer[double_buffer_index++] = temp_int;
-
-        hud_scanline -= (hud_skip_scanline + 1);
-      }
-
-      set_scroll_x(enemy_area_x);
-      set_scroll_y(enemy_area_y);
-
-      // scroll to hud at the end
-      double_buffer[double_buffer_index++] = hud_scanline - 1;
-      double_buffer[double_buffer_index++] = 0xfd;
-      double_buffer[double_buffer_index++] = 0xf6;
-      double_buffer[double_buffer_index++] = 0x20;
-      double_buffer[double_buffer_index++] = 0x00;
-      double_buffer[double_buffer_index++] = 0xf1;
-      double_buffer[double_buffer_index++] = 0x08;
 
       break;
     }
