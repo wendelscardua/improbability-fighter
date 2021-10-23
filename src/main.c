@@ -345,7 +345,7 @@ void compute_collisions (void) {
     if (IS_PLAYER_BULLET(i)) {
       if (temp_collidable_b.y > 0x64) continue;
       for(temp = 0; temp < num_enemies; ++temp) {
-        temp_collidable_a.x = enemy_x[temp];
+        temp_collidable_a.x = enemy_x[temp] - enemy_area_x;
         temp_collidable_a.y = enemy_y[temp] - enemy_rel_y;
         temp_collidable_a.width = enemy_width[temp];
         temp_collidable_a.height = enemy_height[temp];
@@ -498,7 +498,7 @@ void enemy_shoot (void) {
   if (enemy_shoot_cd[temp] > 0 || get_num_bullets() >= MAX_BULLETS || enemy_row_movement > 0) return;
   if (enemy_bullet_count[temp] == 0 && rand8() > 32) return;
 
-  temp_int_x = FP(enemy_x[temp] + enemy_width[temp] / 2 - 4, 0);
+  temp_int_x = FP(enemy_x[temp] + enemy_width[temp] / 2 - 4 - enemy_area_x, 0);
   temp_int_y = FP(enemy_y[temp] + enemy_height[temp] / 2 - enemy_rel_y, 0);
 
   switch(enemy_pattern[temp]) {
