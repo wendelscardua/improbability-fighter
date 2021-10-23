@@ -92,6 +92,7 @@ unsigned int enemy_rel_y;
 unsigned int player_x, player_y;
 signed char player_speed;
 unsigned char player_shoot_cd, player_bullets_cd, player_bullet_count;
+unsigned char player_blink;
 unsigned char health, chaos;
 unsigned char chaos_counter;
 
@@ -258,6 +259,7 @@ void init_ship (void) {
   player_bullet_count = 0;
   player_bullets_cd = 0;
   player_speed = 0;
+  player_blink = 0;
   health = 16;
   chaos = 0;
   chaos_counter = 240;
@@ -358,6 +360,7 @@ void compute_collisions (void) {
         --i;
         if (health > 0) {
           --health;
+          player_blink = 45;
           update_health();
           if (health == 0) {
             // TODO game over
@@ -645,6 +648,8 @@ void main (void) {
         --enemy_rel_y;
       }
 
+      if (player_blink > 0) --player_blink;
+
       HIT_CHAOS(1);
 
       if (health > 0 && chaos_counter == 0) {
@@ -828,6 +833,8 @@ void main (void) {
 }
 
 void draw_ship (void) {
+  if (player_blink && ((get_frame_count() & 0xa) != 0x0)) return;
+
   temp_x = INT(player_x);
   temp_y = INT(player_y);
   if (current_enemy_formation == MAX_FORMATIONS) {
