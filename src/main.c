@@ -89,6 +89,8 @@ enum ship_mode {
 unsigned char enemy_area_x;
 unsigned int enemy_area_y;
 unsigned char min_area_x, max_area_x;
+char area_x_speed;
+
 unsigned int enemy_rel_y;
 unsigned int player_x, player_y;
 signed char player_speed;
@@ -180,6 +182,10 @@ void init_wram (void) {
 void load_enemy_formation (unsigned char index);
 
 unsigned char load_enemy_row (void) {
+  enemy_area_x = 0;
+  set_scroll_x(enemy_area_x);
+  area_x_speed = 1;
+
   temp = formations[current_enemy_formation][enemy_formation_index++];
   if (temp == 0) {
     ++current_enemy_formation;
@@ -191,10 +197,8 @@ unsigned char load_enemy_row (void) {
       irq_array[0] = 0xff;
       double_buffer[0] = 0xff;
 
-      enemy_area_x = 0;
       enemy_area_y = 0xa0;
       enemy_rel_y = enemy_area_y;
-      set_scroll_x(enemy_area_x);
       set_scroll_y(enemy_area_y);
 
       clear_vram_buffer();
@@ -237,6 +241,9 @@ unsigned char load_enemy_row (void) {
 
     ++num_enemies;
   }
+
+
+
   enemy_row_movement = 64;
   return 1;
 }
@@ -587,6 +594,8 @@ void hud_stuff (void) {
     temp_int = 0x2000 + 0x4 * HUD_HEIGHT;
     double_buffer[double_buffer_index++] = (temp_int>>8);
     double_buffer[double_buffer_index++] = temp_int;
+    double_buffer[double_buffer_index++] = 0xf5;
+    double_buffer[double_buffer_index++] = enemy_area_x;
 
     hud_scanline -= (hud_skip_scanline + 1);
   }
@@ -602,6 +611,8 @@ void hud_stuff (void) {
   double_buffer[double_buffer_index++] = 0x00;
   double_buffer[double_buffer_index++] = 0xf1;
   double_buffer[double_buffer_index++] = 0x08;
+  double_buffer[double_buffer_index++] = 0xf5;
+  double_buffer[double_buffer_index++] = 0x00;
   return;
 }
 
@@ -656,6 +667,17 @@ void main (void) {
         --enemy_row_movement;
         enemy_area_y = sub_scroll_y(1, enemy_area_y);
         --enemy_rel_y;
+      }
+      if (enemy_row_movement == 0) {
+        enemy_area_x += area_x_speed;
+        min_area_x += area_x_speed;
+        max_area_x += area_x_speed;
+        if (min_area_x < 0x08 || max_area_x > 0xf7) {
+          area_x_speed = -area_x_speed;
+          enemy_area_x += area_x_speed;
+          min_area_x += area_x_speed;
+          max_area_x += area_x_speed;
+        }
       }
 
       if (player_blink > 0) --player_blink;
