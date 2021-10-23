@@ -191,6 +191,12 @@ unsigned char load_enemy_row (void) {
       }
       irq_array[0] = 0xff;
 
+      enemy_area_x = 0;
+      enemy_area_y = 0xa0;
+      enemy_rel_y = enemy_area_y;
+      set_scroll_x(enemy_area_x);
+      set_scroll_y(enemy_area_y);
+
       clear_vram_buffer();
       pal_fade_to(4, 0);
       ppu_off(); // screen off
