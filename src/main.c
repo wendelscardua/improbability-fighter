@@ -604,15 +604,19 @@ void main (void) {
     ppu_wait_nmi();
     clear_vram_buffer();
     pad_poll(0);
-    rand16();
 
     double_buffer_index = 0;
 
     switch (current_game_state) {
     case Title:
-      if (get_pad_new(0) & (PAD_START | PAD_A)) {
-        sfx_play(SFX_START, 0);
-        start_game();
+      for(i = 0; i < 16; i++) {
+        rand16();
+        if (get_pad_new(0) & (PAD_START | PAD_A)) {
+          sfx_play(SFX_START, 0);
+          start_game();
+          break;
+        }
+        pad_poll(0);
       }
       break;
     case GamePlay:
