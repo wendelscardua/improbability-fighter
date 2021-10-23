@@ -76,8 +76,7 @@ unsigned char hud_scanline, hud_skip_scanline;
 
 enum game_state {
                  Title,
-                 GamePlay,
-                 GameEnd
+                 GamePlay
 } current_game_state;
 
 enum ship_mode {
@@ -578,7 +577,7 @@ void main (void) {
 
       HIT_CHAOS(1);
 
-      if (chaos_counter == 0) {
+      if (health > 0 && chaos_counter == 0) {
         if (chaos < 16) {
           ++chaos;
           update_chaos();
@@ -771,12 +770,6 @@ void main (void) {
       double_buffer[double_buffer_index++] = 0xf1;
       double_buffer[double_buffer_index++] = 0x08;
 
-      break;
-    case GameEnd:
-      if (get_pad_new(0) & PAD_START) {
-        sfx_play(SFX_SELECT, 0);
-        go_to_title();
-      }
       break;
     }
 
