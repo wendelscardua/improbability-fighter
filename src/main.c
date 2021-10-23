@@ -190,6 +190,7 @@ unsigned char load_enemy_row (void) {
         // do nothing while we wait
       }
       irq_array[0] = 0xff;
+      double_buffer[0] = 0xff;
 
       enemy_area_x = 0;
       enemy_area_y = 0xa0;
@@ -395,6 +396,24 @@ void start_game (void) {
 
 void go_to_title (void) {
   current_game_state = Title;
+
+  if (irq_array[0] != 0xff) {
+    while(!is_irq_done() ){ // have we reached the 0xff, end of data
+      // is_irq_done() returns zero if not done
+      // do nothing while we wait
+    }
+    irq_array[0] = 0xff;
+    double_buffer[0] = 0xff;
+  }
+
+  enemy_area_x = 0;
+  enemy_area_y = 0xa0;
+  enemy_rel_y = enemy_area_y;
+  set_scroll_x(enemy_area_x);
+  set_scroll_y(enemy_area_y);
+
+  clear_vram_buffer();
+
   pal_fade_to(4, 0);
   ppu_off(); // screen off
   // draw some things
